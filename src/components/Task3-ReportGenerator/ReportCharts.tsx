@@ -14,6 +14,7 @@ type ReportChartsProps = {
   lineChartRef: RefObject<HTMLDivElement | null>;
 };
 
+/** Report chart section (pie + line) with refs for export. */
 export function ReportCharts({
   topImpactRows,
   kpiSeries,
@@ -25,7 +26,8 @@ export function ReportCharts({
       <Col lg={6}>
         <Card className="card-hover">
           <Card.Header className="fw-semibold">Top impact (pie)</Card.Header>
-          <Card.Body style={{ height: 320 }}>
+          <Card.Body style={{ height: "var(--chart-height-md)" }}>
+            {/* The ref allows the PDF exporter to capture the chart DOM as an image. */}
             <ImpactPieChart ref={pieChartRef} data={topImpactRows} />
           </Card.Body>
         </Card>
@@ -33,7 +35,8 @@ export function ReportCharts({
       <Col lg={6}>
         <Card className="card-hover">
           <Card.Header className="fw-semibold">KPI across scenarios</Card.Header>
-          <Card.Body style={{ height: 320 }}>
+          <Card.Body style={{ height: "var(--chart-height-md)" }}>
+            {/* Same idea for the KPI line chart (captured for export). */}
             <KpiLineChart ref={lineChartRef} data={kpiSeries} angledLabels />
           </Card.Body>
         </Card>

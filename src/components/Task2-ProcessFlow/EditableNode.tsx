@@ -1,5 +1,6 @@
 import { Handle, Position, type NodeProps } from "reactflow";
 
+import { NODE_TYPE_COLORS } from "../../constants/colors";
 import type { NodeType } from "./types";
 
 export type EditableNodeData = {
@@ -8,11 +9,17 @@ export type EditableNodeData = {
   onRequestEdit: (nodeId: string) => void;
 };
 
-export function EditableNode({
-  id,
-  data,
-  selected,
-}: NodeProps<EditableNodeData>) {
+/** React Flow node renderer with inline edit affordance. */
+export function EditableNode({ id, data, selected }: NodeProps<EditableNodeData>) {
+  const nodeBorderColor = NODE_TYPE_COLORS[data.type] ?? "var(--color-node-border)";
+
+  const handleStyle = {
+    width: "var(--size-handle)",
+    height: "var(--size-handle)",
+    border: `var(--border-width) solid ${nodeBorderColor}`,
+    background: "color-mix(in oklab, var(--color-node-bg), black 15%)",
+  } as const;
+
   return (
     <div
       role="button"
@@ -24,21 +31,19 @@ export function EditableNode({
       style={{
         borderRadius: "var(--radius-sm)",
         border: selected
-          ? "2px solid color-mix(in oklab, var(--bs-primary), white 20%)"
-          : "1px solid var(--color-node-border)",
+          ? "var(--border-width-thick) solid color-mix(in oklab, var(--bs-primary), white 20%)"
+          : `var(--border-width) solid ${nodeBorderColor}`,
         background: "var(--color-node-bg)",
-        padding: "10px 12px",
+        padding: "var(--space-3) var(--space-3)",
         fontSize: "var(--text-xs)",
-        minWidth: 180,
-        height: 54,
+        minWidth: "var(--size-node-min-width)",
+        height: "var(--size-node-height)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        gap: 10,
+        gap: "var(--space-3)",
         textAlign: "center",
-        boxShadow: selected
-          ? "0 0 0 3px color-mix(in oklab, var(--bs-primary), transparent 75%)"
-          : "none",
+        boxShadow: selected ? "var(--shadow-focus)" : "none",
         cursor: "default",
         userSelect: "none",
       }}
@@ -48,38 +53,29 @@ export function EditableNode({
       <Handle
         type="target"
         position={Position.Left}
-        style={{
-          width: 10,
-          height: 10,
-          border: "1px solid var(--color-node-border)",
-          background: "color-mix(in oklab, var(--color-node-bg), black 15%)",
-        }}
+        style={handleStyle}
       />
 
-      <div style={{ display: "grid", gap: 4 }}>
+      <div style={{ display: "grid", gap: "var(--space-1)" }}>
         <div
           style={{
-            fontSize: 11,
+            fontSize: "var(--text-xs)",
             color: "var(--bs-secondary-color)",
-            lineHeight: 1,
+            lineHeight: "var(--leading-tight)",
           }}
         >
           {data.type}
         </div>
-        <div style={{ fontWeight: 600, lineHeight: 1.15 }}>{data.name}</div>
+        <div style={{ fontWeight: 600, lineHeight: "var(--leading-tight)" }}>
+          {data.name}
+        </div>
       </div>
 
       <Handle
         type="source"
         position={Position.Right}
-        style={{
-          width: 10,
-          height: 10,
-          border: "1px solid var(--color-node-border)",
-          background: "color-mix(in oklab, var(--color-node-bg), black 15%)",
-        }}
+        style={handleStyle}
       />
     </div>
   );
 }
-

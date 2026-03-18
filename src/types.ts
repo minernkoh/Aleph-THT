@@ -1,3 +1,9 @@
+/**
+ * Shared TypeScript types used across pages/components/hooks.
+ *
+ * These types describe the (validated) shape of our mock results data and the
+ * smaller “view model” rows that we derive for tables/charts.
+ */
 export type MockResults = {
   data: {
     main_summary_text: string;
@@ -42,6 +48,10 @@ export type MockResults = {
   };
 };
 
+/**
+ * Flattened row used by Task 1 / Task 4 tables (scenario + equipment variable).
+ * This is derived from `MockResults.data.simulated_summary.simulated_data`.
+ */
 export type SimulatedDataRow = {
   scenario: string;
   kpi_value: number;
@@ -52,8 +62,14 @@ export type SimulatedDataRow = {
   unit: string;
 };
 
+/** A single “name → weight” item, used in pie charts and summary lists. */
 export type ImpactRow = { name: string; weight: number };
 
+/** KPI time/sequence series point (one KPI value per scenario). */
 export type KpiSeriesRow = { scenario: string; kpi: number };
 
+/** Bar chart row for setpoint impacts (“label” is typically equipment + setpoint). */
 export type SetpointBarRow = { label: string; weightage: number };
+
+/** Scatter plot point used in the dashboard/report scatter chart. */
+export type ScatterDataPoint = { x: number; y: number; scenario: number };

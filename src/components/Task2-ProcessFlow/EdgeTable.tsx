@@ -1,7 +1,7 @@
 import type {
   CellValueChangedEvent,
   ColDef,
-  RowClickedEvent,
+  SelectionChangedEvent,
   ValueFormatterParams,
 } from "ag-grid-community";
 import Alert from "react-bootstrap/Alert";
@@ -12,10 +12,13 @@ import Stack from "react-bootstrap/Stack";
 import { useCallback, useMemo, useState } from "react";
 import { PlusIcon, TrashIcon } from "@phosphor-icons/react";
 
+import { NODE_TYPE_COLORS } from "../../constants/colors";
 import { TableComponent } from "../Task1-PaginatedTable";
 import { makeId } from "./id";
 import { NodeSelectCellEditor } from "./NodeSelectCellEditor";
 import type { ProcessEdge, ProcessNode } from "./types";
+
+const TABLE_HEIGHT = 280;
 
 export type EdgeTableProps = {
   nodes: ProcessNode[];
@@ -23,13 +26,20 @@ export type EdgeTableProps = {
   onChange: (nextEdges: ProcessEdge[]) => void;
 };
 
+/** Editable table for managing process-flow edges. */
 export function EdgeTable({ nodes, edges, onChange }: EdgeTableProps) {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const nodeNameById = useMemo(() => {
     const m = new Map<string, string>();
     for (const n of nodes) m.set(n.id, n.name);
+    return m;
+  }, [nodes]);
+
+  const nodeTypeById = useMemo(() => {
+    const m = new Map<string, ProcessNode["type"]>();
+    for (const n of nodes) m.set(n.id, n.type);
     return m;
   }, [nodes]);
 
@@ -81,10 +91,12 @@ export function EdgeTable({ nodes, edges, onChange }: EdgeTableProps) {
 
       setValidationError(null);
 
+      // Validation rule 1: no self-loops.
       if (next.upstreamNodeId === next.downstreamNodeId) {
         setValidationError("Upstream and downstream nodes must be different.");
         const field = e.colDef.field;
         if (field === "upstreamNodeId" || field === "downstreamNodeId") {
+          // Roll back the just-edited cell to its previous value.
           onChange(
             edges.map((ed) =>
               ed.id === next.id
@@ -99,6 +111,7 @@ export function EdgeTable({ nodes, edges, onChange }: EdgeTableProps) {
         return;
       }
 
+      // Validation rule 2: prevent duplicate edges between the same two nodes.
       if (
         next.upstreamNodeId &&
         next.downstreamNodeId &&
@@ -113,6 +126,7 @@ export function EdgeTable({ nodes, edges, onChange }: EdgeTableProps) {
         );
         const field = e.colDef.field;
         if (field === "upstreamNodeId" || field === "downstreamNodeId") {
+          // Roll back the edit so the table stays in a valid state.
           onChange(
             edges.map((ed) =>
               ed.id === next.id
@@ -132,9 +146,10 @@ export function EdgeTable({ nodes, edges, onChange }: EdgeTableProps) {
     [edges, onChange, isDuplicateEdge],
   );
 
-  const onRowClicked = useCallback(
-    (e: RowClickedEvent<ProcessEdge>) => {
-      setSelectedId(e.data?.id ?? null);
+  const onSelectionChanged = useCallback(
+    (e: SelectionChangedEvent<ProcessEdge>) => {
+      const selected = e.api.getSelectedRows().map((r) => r.id);
+      setSelectedIds(selected);
     },
     [],
   );
@@ -142,29 +157,29 @@ export function EdgeTable({ nodes, edges, onChange }: EdgeTableProps) {
   const gridOptionsWithEditor = useMemo(
     () => ({
       stopEditingWhenCellsLoseFocus: true,
-      rowSelection: { mode: "singleRow" as const },
+      rowSelection: { mode: "multiRow" as const },
+      getRowStyle: (params: { data?: ProcessEdge | null }) => {
+        const upstreamId = params.data?.upstreamNodeId;
+        if (!upstreamId) return undefined;
+        const t = nodeTypeById.get(upstreamId);
+        const color = t ? NODE_TYPE_COLORS[t] : undefined;
+        return color ? { borderLeft: `3px solid ${color}` } : undefined;
+      },
     }),
-    [],
+    [nodeTypeById],
   );
 
-  const tableHeight = useMemo(() => {
-    const headerPx = 40;
-    const rowPx = 44;
-    const minPx = 180;
-    const maxPx = 320;
-    const rows = Math.max(1, edges.length);
-    return Math.min(maxPx, Math.max(minPx, headerPx + rows * rowPx));
-  }, [edges.length]);
-
   function handleConfirmRemove() {
-    if (!selectedId) return;
-    onChange(edges.filter((e) => e.id !== selectedId));
-    setSelectedId(null);
+    if (selectedIds.length === 0) return;
+    const selectedIdSet = new Set(selectedIds);
+    // Remove the selected edges from the shared edges array.
+    onChange(edges.filter((e) => !selectedIdSet.has(e.id)));
+    setSelectedIds([]);
     setShowRemoveConfirm(false);
   }
 
   return (
-    <Card>
+    <Card className="h-100 d-flex flex-column">
       <Card.Header>
         <Stack direction="horizontal" className="justify-content-between">
           <div className="fw-semibold">Edges</div>
@@ -195,25 +210,31 @@ export function EdgeTable({ nodes, edges, onChange }: EdgeTableProps) {
                 Add edge
               </span>
             </Button>
-            <Button
-              size="sm"
-              className="touch-target-min"
-              variant="outline-danger"
-              disabled={!selectedId}
-              onClick={() => setShowRemoveConfirm(true)}
-              title="Removes the selected edge"
-            >
-              <span className="d-inline-flex align-items-center gap-1">
-                <TrashIcon size={16} aria-hidden="true" />
-                Remove selected
-              </span>
-            </Button>
+            {selectedIds.length > 0 ? (
+              <Button
+                size="sm"
+                className="touch-target-min"
+                variant="outline-danger"
+                onClick={() => setShowRemoveConfirm(true)}
+                title={
+                  selectedIds.length === 1
+                    ? "Removes the selected edge"
+                    : "Removes the selected edges"
+                }
+              >
+                <span className="d-inline-flex align-items-center gap-1">
+                  <TrashIcon size={16} aria-hidden="true" />
+                  Remove
+                </span>
+              </Button>
+            ) : null}
           </Stack>
         </Stack>
       </Card.Header>
-      <Card.Body className="p-0">
-        <div className="p-3 pb-2">
-          {edges.length === 0 ? (
+      <Card.Body className="p-0" style={{ flex: 1, minHeight: 0 }}>
+        {edges.length === 0 || validationError ? (
+          <div className="p-3 pb-2">
+            {edges.length === 0 ? (
             <div className="mb-3 text-body-secondary">
               {nodes.length < 2 ? (
                 <>
@@ -227,8 +248,8 @@ export function EdgeTable({ nodes, edges, onChange }: EdgeTableProps) {
                 </>
               )}
             </div>
-          ) : null}
-          {validationError ? (
+            ) : null}
+            {validationError ? (
             <Alert
               variant="warning"
               role="status"
@@ -238,8 +259,9 @@ export function EdgeTable({ nodes, edges, onChange }: EdgeTableProps) {
             >
               {validationError}
             </Alert>
-          ) : null}
-        </div>
+            ) : null}
+          </div>
+        ) : null}
 
         <Modal
           show={showRemoveConfirm}
@@ -250,8 +272,10 @@ export function EdgeTable({ nodes, edges, onChange }: EdgeTableProps) {
             <Modal.Title id="remove-edge-title">Remove edge?</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            This cannot be undone. The selected edge will be removed from the
-            process flow.
+            This cannot be undone.{" "}
+            {selectedIds.length === 1
+              ? "The selected edge will be removed from the process flow."
+              : `The ${selectedIds.length} selected edges will be removed from the process flow.`}
           </Modal.Body>
           <Modal.Footer>
             <Button
@@ -275,8 +299,8 @@ export function EdgeTable({ nodes, edges, onChange }: EdgeTableProps) {
           getRowId={(p) => p.data.id}
           gridOptions={gridOptionsWithEditor}
           onCellValueChanged={onCellValueChanged}
-          onRowClicked={onRowClicked}
-          height={tableHeight}
+          onSelectionChanged={onSelectionChanged}
+          height={TABLE_HEIGHT}
         />
       </Card.Body>
     </Card>

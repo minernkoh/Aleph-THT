@@ -2,7 +2,7 @@ import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Form from "react-bootstrap/Form";
 import Stack from "react-bootstrap/Stack";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { NodeType } from "./types";
 
@@ -17,6 +17,7 @@ export type NodeEditPopupProps = {
   onSave: (updates: { name: string; type: NodeType }) => void;
 };
 
+/** Small popup dialog for editing a node's name and type. */
 export function NodeEditPopup({
   nodeId,
   initialName,
@@ -29,11 +30,19 @@ export function NodeEditPopup({
   const [type, setType] = useState<NodeType>(initialType);
   const rootRef = useRef<HTMLDivElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
+  const [pos, setPos] = useState(() => ({
+    left: anchor.x + 12,
+    top: anchor.y - 12,
+  }));
 
   useEffect(() => {
     setName(initialName);
     setType(initialType);
   }, [initialName, initialType, nodeId]);
+
+  useEffect(() => {
+    setPos({ left: anchor.x + 12, top: anchor.y - 12 });
+  }, [anchor.x, anchor.y]);
 
   useEffect(() => {
     // Autofocus without stealing focus from other interactions too aggressively.
@@ -42,8 +51,32 @@ export function NodeEditPopup({
   }, [nodeId]);
 
   useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    // Ensure the popup stays within its positioned parent (FlowCanvas Card.Body).
+    const parent = (el.offsetParent ?? el.parentElement) as HTMLElement | null;
+    if (!parent) return;
+
+    const pRect = parent.getBoundingClientRect();
+    const rRect = el.getBoundingClientRect();
+
+    const margin = 8;
+    const maxLeft = Math.max(margin, pRect.width - rRect.width - margin);
+    const maxTop = Math.max(margin, pRect.height - rRect.height - margin);
+
+    const nextLeft = Math.min(Math.max(pos.left, margin), maxLeft);
+    const nextTop = Math.min(Math.max(pos.top, margin), maxTop);
+
+    if (nextLeft !== pos.left || nextTop !== pos.top) {
+      setPos({ left: nextLeft, top: nextTop });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pos.left, pos.top, nodeId]);
+
+  useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onCancel();
+      // Support "save" without leaving the keyboard: Ctrl/Cmd+Enter.
       if ((e.key === "Enter" || e.key === "NumpadEnter") && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         onSave({ name: name.trim() || initialName, type });
@@ -54,6 +87,7 @@ export function NodeEditPopup({
   }, [name, type, initialName, onCancel, onSave]);
 
   useEffect(() => {
+    // Click outside closes the popup (like a dropdown/menu).
     function onPointerDown(e: PointerEvent) {
       const el = rootRef.current;
       if (!el) return;
@@ -64,7 +98,7 @@ export function NodeEditPopup({
     return () => window.removeEventListener("pointerdown", onPointerDown);
   }, [onCancel]);
 
-  const title = useMemo(() => `Edit node`, []);
+  const title = "Edit node";
 
   return (
     <div
@@ -73,16 +107,17 @@ export function NodeEditPopup({
       aria-label={title}
       style={{
         position: "absolute",
-        left: anchor.x + 12,
-        top: anchor.y - 10,
+        left: pos.left,
+        top: pos.top,
         zIndex: 20,
-        width: 240,
+        width: "var(--size-popup-width)",
       }}
     >
       <Card
         style={{
-          border: "1px solid color-mix(in oklab, var(--color-node-border), black 15%)",
-          boxShadow: "0 18px 40px rgba(0,0,0,0.28)",
+          border:
+            "var(--border-width) solid color-mix(in oklab, var(--color-node-border), black 15%)",
+          boxShadow: "var(--shadow-lg)",
         }}
       >
         <Card.Body className="p-3">
@@ -115,12 +150,18 @@ export function NodeEditPopup({
           </Form.Group>
 
           <Stack direction="horizontal" gap={2} className="justify-content-end">
-            <Button size="sm" variant="outline-secondary" onClick={onCancel}>
+            <Button
+              size="sm"
+              variant="outline-secondary"
+              className="touch-target-min"
+              onClick={onCancel}
+            >
               Cancel
             </Button>
             <Button
               size="sm"
               variant="primary"
+              className="touch-target-min"
               onClick={() => onSave({ name: name.trim() || initialName, type })}
               title="Ctrl/Cmd+Enter to save"
             >

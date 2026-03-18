@@ -3,6 +3,13 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "re
 
 import type { ProcessNode } from "./types";
 
+/**
+ * AG Grid cell editor for selecting a node by id.
+ *
+ * In the Edge table, edges store `upstreamNodeId`/`downstreamNodeId`, but the UI
+ * should display node names. This editor provides a simple `<select>` dropdown
+ * to choose a node and returns the selected id back to the grid.
+ */
 export type NodeSelectCellEditorParams = ICellEditorParams & {
   nodes: ProcessNode[];
   /** Default off: avoid unexpected focus jumps during grid editing. */
@@ -15,8 +22,8 @@ export const NodeSelectCellEditor = forwardRef<
 >(function NodeSelectCellEditor(props, ref) {
   const { value, nodes, autoFocus = false } = props;
   const nodeIds = nodes.map((n) => n.id);
-  const validValue =
-    value && nodeIds.includes(value) ? value : "";
+  // If the current value no longer exists (e.g. node deleted), fall back to empty.
+  const validValue = value && nodeIds.includes(value) ? value : "";
   const [selectedId, setSelectedId] = useState<string>(validValue);
   const selectRef = useRef<HTMLSelectElement>(null);
 
@@ -25,6 +32,7 @@ export const NodeSelectCellEditor = forwardRef<
   }));
 
   useEffect(() => {
+    // Keep the editor state in sync when the node list changes.
     if (!value || !nodeIds.includes(value)) {
       setSelectedId("");
     } else {

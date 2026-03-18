@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Col from "react-bootstrap/Col";
@@ -16,6 +16,7 @@ import {
 
 type NarrativeCardProps = {
   narrative: string;
+  hasNarrative: boolean;
   isGenerating: boolean;
   isExporting: boolean;
   onGenerate: () => void;
@@ -23,15 +24,23 @@ type NarrativeCardProps = {
   onNarrativeChange: (nextNarrative: string) => void;
 };
 
+/** Narrative editor/preview card with generate/export actions. */
 export function NarrativeCard({
   narrative,
+  hasNarrative,
   isGenerating,
   isExporting,
   onGenerate,
   onExport,
   onNarrativeChange,
 }: NarrativeCardProps) {
+  // Two modes: an editable textarea, or a Markdown preview (what will be exported).
   const [mode, setMode] = useState<"preview" | "edit">("preview");
+
+  useEffect(() => {
+    // If the narrative is cleared, ensure we don't stay in edit mode.
+    if (!hasNarrative) setMode("preview");
+  }, [hasNarrative]);
 
   return (
     <Card className="mb-3 card-hover">
@@ -39,67 +48,77 @@ export function NarrativeCard({
       <Card.Body>
         <Row className="g-3 align-items-center">
           <Col>
-            <Stack direction="horizontal" gap={2} className="justify-content-between">
-              <Stack direction="horizontal" gap={2}>
+            <Stack
+              direction="horizontal"
+              gap={2}
+              className="justify-content-between flex-wrap"
+            >
+              {hasNarrative ? (
+                <Stack direction="horizontal" gap={2}>
+                  <Button
+                    variant={mode === "preview" ? "secondary" : "outline-secondary"}
+                    size="sm"
+                    className="touch-target-min"
+                    onClick={() => setMode("preview")}
+                    disabled={isGenerating}
+                  >
+                    <span className="d-inline-flex align-items-center gap-1">
+                      <EyeIcon size={16} aria-hidden="true" />
+                      Preview
+                    </span>
+                  </Button>
+                  <Button
+                    variant={mode === "edit" ? "secondary" : "outline-secondary"}
+                    size="sm"
+                    className="touch-target-min"
+                    onClick={() => setMode("edit")}
+                    disabled={isGenerating}
+                  >
+                    <span className="d-inline-flex align-items-center gap-1">
+                      <PencilSimpleIcon size={16} aria-hidden="true" />
+                      Edit
+                    </span>
+                  </Button>
+                </Stack>
+              ) : null}
+              <Stack direction="horizontal" gap={2} className="ms-auto flex-wrap">
                 <Button
-                  variant={mode === "preview" ? "secondary" : "outline-secondary"}
-                  size="sm"
+                  variant="primary"
                   className="touch-target-min"
-                  onClick={() => setMode("preview")}
+                  onClick={onGenerate}
                   disabled={isGenerating}
                 >
-                  <span className="d-inline-flex align-items-center gap-1">
-                    <EyeIcon size={16} aria-hidden="true" />
-                    Preview
-                  </span>
+                  {isGenerating ? (
+                    <span className="d-inline-flex align-items-center gap-2">
+                      <Spinner animation="border" size="sm" />
+                      Generating…
+                    </span>
+                  ) : (
+                    <span className="d-inline-flex align-items-center gap-2">
+                      <ArrowsClockwiseIcon size={18} aria-hidden="true" />
+                      {hasNarrative ? "Regenerate narrative" : "Generate narrative"}
+                    </span>
+                  )}
                 </Button>
                 <Button
-                  variant={mode === "edit" ? "secondary" : "outline-secondary"}
-                  size="sm"
+                  variant="outline-secondary"
                   className="touch-target-min"
-                  onClick={() => setMode("edit")}
-                  disabled={isGenerating}
+                  onClick={onExport}
+                  disabled={isExporting}
                 >
-                  <span className="d-inline-flex align-items-center gap-1">
-                    <PencilSimpleIcon size={16} aria-hidden="true" />
-                    Edit
-                  </span>
+                  {isExporting ? (
+                    <span className="d-inline-flex align-items-center gap-2">
+                      <Spinner animation="border" size="sm" />
+                      Exporting…
+                    </span>
+                  ) : (
+                    <span className="d-inline-flex align-items-center gap-2">
+                      <FilePdfIcon size={18} aria-hidden="true" />
+                      Export PDF
+                    </span>
+                  )}
                 </Button>
               </Stack>
-              <Button
-                variant="primary"
-                onClick={onGenerate}
-                disabled={isGenerating}
-              >
-                {isGenerating ? (
-                  <span className="d-inline-flex align-items-center gap-2">
-                    <Spinner animation="border" size="sm" />
-                    Generating…
-                  </span>
-                ) : (
-                  <span className="d-inline-flex align-items-center gap-2">
-                    <ArrowsClockwiseIcon size={18} aria-hidden="true" />
-                    Regenerate narrative
-                  </span>
-                )}
-              </Button>
-              <Button
-                variant="outline-secondary"
-                onClick={onExport}
-                disabled={isExporting}
-              >
-                {isExporting ? (
-                  <span className="d-inline-flex align-items-center gap-2">
-                    <Spinner animation="border" size="sm" />
-                    Exporting…
-                  </span>
-                ) : (
-                  <span className="d-inline-flex align-items-center gap-2">
-                    <FilePdfIcon size={18} aria-hidden="true" />
-                    Export PDF
-                  </span>
-                )}
-              </Button>
             </Stack>
           </Col>
         </Row>
@@ -119,6 +138,7 @@ export function NarrativeCard({
           ) : (
             <div className="text-body">
               {isGenerating && !narrative.trim() ? (
+                // While streaming starts, show a simple skeleton so the layout doesn't jump.
                 <div className="d-flex flex-column gap-2">
                   <div className="skeleton-line skeleton-line--lg" style={{ width: "72%" }} />
                 </div>
@@ -126,6 +146,7 @@ export function NarrativeCard({
                 <>
                   <ReactMarkdown>{narrative}</ReactMarkdown>
                   {isGenerating && narrative.trim() ? (
+                    // Subtle “typing cursor” while streaming chunks append to the narrative.
                     <span
                       className="streaming-cursor align-baseline"
                       aria-hidden

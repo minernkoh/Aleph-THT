@@ -1,3 +1,9 @@
+/**
+ * Minimal Express backend used for optional LLM narrative generation.
+ *
+ * The frontend can render a report without any server. When a Gemini API key is
+ * configured, it can call this server endpoint to stream back an AI narrative.
+ */
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
@@ -24,6 +30,7 @@ const USER_PROMPT_PREFIX = [
 ].join("\n");
 
 app.post("/api/generate-narrative", async (req, res) => {
+  // We keep the API key server-side so it isn't exposed in the browser bundle.
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey?.trim()) {
     res.status(500).json({
@@ -33,6 +40,7 @@ app.post("/api/generate-narrative", async (req, res) => {
     return;
   }
 
+  // Validate the request body so the prompt is well-structured and predictable.
   const parsed = NarrativeRequestSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({
@@ -54,6 +62,7 @@ app.post("/api/generate-narrative", async (req, res) => {
       },
     });
 
+    // Server-Sent Events (SSE): keep the HTTP connection open and write "data:" lines.
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
@@ -63,9 +72,11 @@ app.post("/api/generate-narrative", async (req, res) => {
       for await (const chunk of stream) {
         const text = chunk.text ?? "";
         if (text) {
+          // Each event is a JSON payload; the client appends `text` as it arrives.
           res.write(`data: ${JSON.stringify({ text })}\n\n`);
         }
       }
+      // A sentinel event so the client knows the stream ended cleanly.
       res.write("data: [DONE]\n\n");
     } catch (streamErr) {
       const errMessage =

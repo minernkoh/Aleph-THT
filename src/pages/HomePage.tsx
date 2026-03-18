@@ -25,6 +25,7 @@ const tasks = [
   },
 ];
 
+/** Landing page with links to the four demo tasks. */
 export function HomePage() {
   return (
     <Container className="py-4">

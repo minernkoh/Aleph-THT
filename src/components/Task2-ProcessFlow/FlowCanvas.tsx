@@ -23,7 +23,6 @@ import "reactflow/dist/style.css";
 
 import { CanvasContextMenu, type CanvasContextMenuTarget } from "./CanvasContextMenu";
 import { EditableNode, type EditableNodeData } from "./EditableNode";
-import { makeId } from "./id";
 import { NodeEditPopup } from "./NodeEditPopup";
 import type { ProcessEdge, ProcessNode } from "./types";
 import { layoutLeftToRight } from "./layout";
@@ -31,6 +30,7 @@ import { layoutLeftToRight } from "./layout";
 export type FlowCanvasProps = {
   nodes: ProcessNode[];
   edges: ProcessEdge[];
+  createDefaultNode: () => ProcessNode;
   onAddNode: (node: ProcessNode) => void;
   onAddEdge: (upstreamId: string, downstreamId: string) => void;
   onDeleteNodes: (nodeIds: string[]) => void;
@@ -65,15 +65,28 @@ function toRfEdges(validEdges: ProcessEdge[]): Edge[] {
   }));
 }
 
+/** Interactive process-flow canvas (add/connect/edit/delete nodes and edges). */
 export function FlowCanvas({
   nodes,
   edges,
+  createDefaultNode,
   onAddNode,
   onAddEdge,
   onDeleteNodes,
   onDeleteEdges,
   onNodeUpdate,
 }: FlowCanvasProps) {
+  const [isTouchUi, setIsTouchUi] = useState(false);
+
+  useEffect(() => {
+    const mql = window.matchMedia?.("(pointer: coarse)");
+    const update = () => setIsTouchUi(Boolean(mql?.matches));
+    update();
+    if (!mql) return;
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, []);
+
   const nodeIdSet = useMemo(() => new Set(nodes.map((n) => n.id)), [nodes]);
 
   const validEdges = useMemo(
@@ -100,6 +113,16 @@ export function FlowCanvas({
   const [activeEditNodeId, setActiveEditNodeId] = useState<string | null>(null);
   const [editAnchor, setEditAnchor] = useState<{ x: number; y: number } | null>(
     null,
+  );
+
+  const closeEditPopup = useCallback(() => setActiveEditNodeId(null), []);
+  const saveEditPopup = useCallback(
+    (updates: { name: string; type: ProcessNode["type"] }) => {
+      if (!activeEditNodeId) return;
+      onNodeUpdate(activeEditNodeId, updates);
+      setActiveEditNodeId(null);
+    },
+    [activeEditNodeId, onNodeUpdate],
   );
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -244,18 +267,14 @@ export function FlowCanvas({
 
   const addNodeAtFlowPos = useCallback(
     (flowPos: { x: number; y: number }) => {
-      const node: ProcessNode = {
-        id: makeId("node"),
-        name: `Node ${nodes.length + 1}`,
-        type: "type1",
-      };
+      const node = createDefaultNode();
       manuallyPositionedRef.current.add(node.id);
       manualPositionsRef.current.set(node.id, flowPos);
       onAddNode(node);
       setValidationError(null);
       setMenuOpen(false);
     },
-    [nodes.length, onAddNode],
+    [createDefaultNode, onAddNode],
   );
 
   const addNodeFromToolbar = useCallback(() => {
@@ -277,11 +296,12 @@ export function FlowCanvas({
       <Card.Header className="d-flex align-items-center justify-content-between gap-3">
         <div className="fw-semibold">Canvas</div>
         <div className="small text-body-secondary">
-          Double-click empty space to add • Drag handles to connect • Del/Backspace to
-          delete
+          {isTouchUi
+            ? "Tap Add node (or double-tap) • Drag handles to connect • Menu to delete"
+            : "Double-click to add • Drag handles to connect • Del/Backspace to delete"}
         </div>
       </Card.Header>
-      <Card.Body style={{ height: 420, position: "relative" }}>
+      <Card.Body style={{ height: "var(--size-canvas-height)", position: "relative" }}>
         <div
           ref={wrapRef}
           role="img"
@@ -374,12 +394,13 @@ export function FlowCanvas({
               }}
             >
               <Background />
-              <Controls />
+              <Controls showInteractive={false} />
               <Panel position="top-left">
                 <div className="d-flex gap-2">
                   <Button
                     size="sm"
                     variant="outline-primary"
+                    className="touch-target-min"
                     onClick={addNodeFromToolbar}
                     title="Add node"
                   >
@@ -388,10 +409,11 @@ export function FlowCanvas({
                   <Button
                     size="sm"
                     variant="outline-secondary"
+                    className="touch-target-min"
                     onClick={resetLayout}
-                    title="Re-layout nodes (clears manual positions)"
+                    title="Auto layout nodes (clears manual positions)"
                   >
-                    Re-layout
+                    Auto layout
                   </Button>
                 </div>
               </Panel>
@@ -403,7 +425,12 @@ export function FlowCanvas({
           <Alert
             variant="warning"
             className="position-absolute"
-            style={{ left: 12, bottom: 12, marginBottom: 0, maxWidth: 360 }}
+            style={{
+              left: "var(--space-3)",
+              bottom: "var(--space-3)",
+              marginBottom: 0,
+              maxWidth: "var(--size-alert-max-width)",
+            }}
             role="status"
             aria-live="polite"
           >
@@ -421,11 +448,8 @@ export function FlowCanvas({
                 initialName={n.name}
                 initialType={n.type}
                 anchor={editAnchor}
-                onCancel={() => setActiveEditNodeId(null)}
-                onSave={(updates) => {
-                  onNodeUpdate(n.id, updates);
-                  setActiveEditNodeId(null);
-                }}
+                onCancel={closeEditPopup}
+                onSave={saveEditPopup}
               />
             );
           })()

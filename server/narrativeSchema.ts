@@ -1,9 +1,18 @@
 import { z } from "zod";
 
+/**
+ * Request-body schema for `POST /api/generate-narrative`.
+ *
+ * The frontend sends a compact JSON payload (summary text + tables + KPI stats)
+ * that the backend forwards to Gemini. We validate the request up-front so the
+ * server can return a helpful 400 error for malformed input.
+ */
 export const NarrativeRequestSchema = z
   .object({
+    // Plain-text summaries shown on the report page.
     main_summary_text: z.string(),
     top_summary_text: z.string(),
+    // Map of variable name → weight/importance.
     top_impact: z.record(z.string(), z.number()),
     top_variables: z.array(
       z.object({
@@ -33,12 +42,14 @@ export const NarrativeRequestSchema = z
         }),
       )
       .default([]),
+    // Simple KPI statistics computed on the frontend for quick context.
     kpi_stats: z.object({
       min: z.number(),
       max: z.number(),
       avg: z.number(),
       n: z.number().int().positive(),
     }),
+    // A small sample of scenarios so the model sees representative structure.
     scenarios_sample: z.array(
       z.object({
         scenario: z.string(),
@@ -50,5 +61,6 @@ export const NarrativeRequestSchema = z
   })
   .strict();
 
+/** TypeScript type derived from the Zod schema. */
 export type NarrativeRequest = z.infer<typeof NarrativeRequestSchema>;
 

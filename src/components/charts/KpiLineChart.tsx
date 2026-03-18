@@ -1,4 +1,3 @@
-import { forwardRef } from "react";
 import {
   CartesianGrid,
   Legend,
@@ -8,12 +7,19 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ResponsiveContainer } from "recharts";
+import { forwardRef } from "react";
 
 import { chartPalette } from "../../constants/colors";
 import type { KpiSeriesRow } from "../../types";
 import { formatNumber } from "../../utils/formatNumber";
+import { ChartShell } from "./ChartShell";
 
+/**
+ * Line chart: KPI value across scenarios.
+ *
+ * Used in the dashboard and in the report export. The optional `angledLabels`
+ * mode makes long scenario names fit better in narrow layouts.
+ */
 type Props = {
   data: KpiSeriesRow[];
   /** When true, use angled X-axis labels and extra bottom margin (e.g. for report layout) */
@@ -23,49 +29,37 @@ type Props = {
 export const KpiLineChart = forwardRef<HTMLDivElement | null, Props>(
   function KpiLineChart({ data, angledLabels = false }, ref) {
     return (
-      <div
+      <ChartShell
         ref={ref}
-        role="img"
-        aria-label="Line chart showing KPI across scenarios"
-        style={{ width: "100%", height: "100%" }}
+        ariaLabel="Line chart showing KPI across scenarios"
+        hasData={data.length > 0}
       >
-        {data.length === 0 ? (
-          <div className="h-100 d-flex align-items-center justify-content-center text-body-secondary">
-            No data available
-          </div>
-        ) : (
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={data}
-            margin={angledLabels ? { bottom: 50 } : undefined}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="scenario"
-              interval="preserveStartEnd"
-              {...(angledLabels
-                ? {
-                    angle: -35,
-                    textAnchor: "end",
-                    height: 50,
-                    tick: { fontSize: 10 },
-                  }
-                : {})}
-            />
-            <YAxis tickFormatter={(v) => formatNumber(Number(v))} />
-            <Tooltip formatter={(v) => [formatNumber(Number(v)), "KPI"]} />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="kpi"
-              name="KPI"
-              strokeWidth={2}
-              stroke={chartPalette[0]}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-        )}
-      </div>
+        <LineChart data={data} margin={angledLabels ? { bottom: 50 } : undefined}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey="scenario"
+            interval="preserveStartEnd"
+            {...(angledLabels
+              ? {
+                  angle: -35,
+                  textAnchor: "end",
+                  height: 50,
+                  tick: { fontSize: 10 },
+                }
+              : {})}
+          />
+          <YAxis tickFormatter={(v) => formatNumber(Number(v))} />
+          <Tooltip formatter={(v) => [formatNumber(Number(v)), "KPI"]} />
+          <Legend />
+          <Line
+            type="monotone"
+            dataKey="kpi"
+            name="KPI"
+            strokeWidth={2}
+            stroke={chartPalette[0]}
+          />
+        </LineChart>
+      </ChartShell>
     );
   },
 );

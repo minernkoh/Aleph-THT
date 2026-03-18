@@ -2,6 +2,12 @@ import { useMemo } from "react";
 import { mockResults } from "../data/mockResults";
 import type { SimulatedDataRow } from "../types";
 
+/**
+ * Flatten simulated scenario data into table-friendly rows.
+ *
+ * The raw mock data is nested: scenarios → equipment → variables. Tables are easiest to render
+ * from a flat list of rows, so we expand it here once and memoize the result.
+ */
 export function useSimulatedDataRows(): SimulatedDataRow[] {
   return useMemo<SimulatedDataRow[]>(() => {
     const rows: SimulatedDataRow[] = [];

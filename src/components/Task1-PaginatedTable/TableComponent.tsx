@@ -5,6 +5,7 @@ import type {
   GridOptions,
   GridReadyEvent,
   RowClickedEvent,
+  SelectionChangedEvent,
 } from "ag-grid-community";
 import { themeQuartz } from "ag-grid-community";
 import { useMemo } from "react";
@@ -17,9 +18,11 @@ export type TableComponentProps<T extends object> = {
   onGridReady?: (event: GridReadyEvent<T>) => void;
   onCellValueChanged?: (event: CellValueChangedEvent<T>) => void;
   onRowClicked?: (event: RowClickedEvent<T>) => void;
+  onSelectionChanged?: (event: SelectionChangedEvent<T>) => void;
   height?: number | string;
 };
 
+/** Shared AG Grid wrapper with sensible defaults. */
 export function TableComponent<T extends object>({
   columnDefs,
   rowData,
@@ -28,21 +31,24 @@ export function TableComponent<T extends object>({
   onGridReady,
   onCellValueChanged,
   onRowClicked,
+  onSelectionChanged,
   height = 420,
 }: TableComponentProps<T>) {
   const defaultColDef = useMemo<ColDef<T>>(
     () => ({
+      // Defaults applied to every column unless overridden by a specific column def.
       sortable: true,
       filter: true,
       resizable: true,
       flex: 1,
-      minWidth: 140,
+      minWidth: 110,
     }),
     [],
   );
 
   const mergedGridOptions = useMemo<GridOptions<T>>(
     () => ({
+      // Consumers can override any grid option; we still guarantee a stable `getRowId`.
       rowSelection: { mode: "singleRow" },
       ...gridOptions,
       getRowId: getRowId ?? gridOptions?.getRowId,
@@ -52,7 +58,7 @@ export function TableComponent<T extends object>({
 
   return (
     <div style={{ width: "100%", overflowX: "auto" }}>
-      <div style={{ minWidth: 640, height }}>
+      <div style={{ minWidth: 480, height }}>
         <AgGridReact<T>
           theme={themeQuartz}
           columnDefs={columnDefs}
@@ -62,6 +68,7 @@ export function TableComponent<T extends object>({
           onGridReady={onGridReady}
           onCellValueChanged={onCellValueChanged}
           onRowClicked={onRowClicked}
+          onSelectionChanged={onSelectionChanged}
         />
       </div>
     </div>

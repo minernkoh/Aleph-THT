@@ -5,32 +5,20 @@ import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import type { ColDef } from "ag-grid-community";
 
-import { mockResults } from "../../data/mockResults";
-import { formatNumber } from "../../utils/formatNumber";
-import { useKpiSeries, useSimulatedDataRows, useTopImpact } from "../../hooks";
-import { exportPdf } from "../../services/pdfExport";
-import type { SimulatedDataRow } from "../../types";
-import { PaginatedTable } from "../Task1-PaginatedTable";
-import { NarrativeCard } from "./NarrativeCard";
-import { ReportCharts } from "./ReportCharts";
+import { mockResults } from "../data/mockResults";
+import { useKpiSeries, useSimulatedDataRows, useTopImpact } from "../hooks";
+import { exportPdf } from "../services/pdfExport";
+import type { SimulatedDataRow } from "../types";
+import { PaginatedTable } from "../components/Task1-PaginatedTable";
+import { NarrativeCard } from "../components/Task3-ReportGenerator/NarrativeCard";
+import { ReportCharts } from "../components/Task3-ReportGenerator/ReportCharts";
 
-function buildTemplateNarrative(topImpactRows: ReturnType<typeof useTopImpact>) {
-  const d = mockResults.data;
-  const topBullet = topImpactRows
-    .map((r) => `- ${r.name}: ${formatNumber(r.weight)}`)
-    .join("\n");
-  return [
-    d.main_summary_text,
-    "",
-    d.top_summary_text,
-    "",
-    "Top impact variables:",
-    topBullet,
-    "",
-    d.impact_summary_text,
-  ].join("\n");
-}
-
+/**
+ * Create a compact JSON payload to send to the backend LLM endpoint.
+ *
+ * We include summaries + tables + a small sample of scenarios. Keeping the payload
+ * small makes requests faster and reduces token usage.
+ */
 function buildLLMInput() {
   const d = mockResults.data;
   const scenarios = d.simulated_summary.simulated_data.map((s) => ({
@@ -57,11 +45,16 @@ function buildLLMInput() {
   };
 }
 
+/** Task 3: report builder (tables + charts + narrative + PDF export). */
 export function ReportPage() {
   const topImpactRows = useTopImpact();
-  const [narrative, setNarrative] = useState<string>(() =>
-    buildTemplateNarrative(topImpactRows),
-  );
+  const [narrative, setNarrative] = useState<string>(() => {
+    try {
+      return localStorage.getItem("report-narrative") ?? "";
+    } catch {
+      return "";
+    }
+  });
   const [isGenerating, setIsGenerating] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +62,6 @@ export function ReportPage() {
   const pieChartRef = useRef<HTMLDivElement | null>(null);
   const lineChartRef = useRef<HTMLDivElement | null>(null);
   const narrativeAbortRef = useRef<AbortController | null>(null);
-  const didAutoGenerateRef = useRef(false);
 
   const kpiSeries = useKpiSeries();
   const simulatedDataRows = useSimulatedDataRows();
@@ -84,7 +76,7 @@ export function ReportPage() {
       { headerName: "Value", field: "value" },
       { headerName: "Unit", field: "unit" },
     ],
-    [],
+    []
   );
 
   const setpointColumnDefs = useMemo<
@@ -96,7 +88,7 @@ export function ReportPage() {
       { headerName: "Weightage", field: "weightage" },
       { headerName: "Unit", field: "unit" },
     ],
-    [],
+    []
   );
 
   const conditionImpactColumnDefs = useMemo<
@@ -108,7 +100,7 @@ export function ReportPage() {
       { headerName: "Weightage", field: "weightage" },
       { headerName: "Unit", field: "unit" },
     ],
-    [],
+    []
   );
 
   const simulatedDataColumnDefs = useMemo<ColDef<SimulatedDataRow>[]>(
@@ -121,33 +113,46 @@ export function ReportPage() {
       { headerName: "Value", field: "value", width: 100 },
       { headerName: "Unit", field: "unit", width: 80 },
     ],
-    [],
+    []
   );
 
-  const hasConditionImpact =
-    mockResults.data.condition_impact_summary.length > 0;
+  const hasConditionImpact = mockResults.data.condition_impact_summary.length > 0;
 
   useEffect(() => {
+    // Auto-dismiss non-critical info messages after a few seconds.
     if (!info) return;
     const t = window.setTimeout(() => setInfo(null), 5000);
     return () => window.clearTimeout(t);
   }, [info]);
 
   useEffect(() => {
+    // Clean up any in-flight streaming request when leaving the page.
     return () => {
       narrativeAbortRef.current?.abort();
     };
   }, []);
 
   useEffect(() => {
-    if (didAutoGenerateRef.current) return;
-    didAutoGenerateRef.current = true;
-    void generateWithLLM();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!narrative.trim()) return;
+    try {
+      localStorage.setItem("report-narrative", narrative);
+    } catch {
+      // ignore: storage may be unavailable (private mode / disabled)
+    }
+  }, [narrative]);
 
   const LLM_TIMEOUT_MS = 30_000;
 
+  /**
+   * Generate narrative text using the backend endpoint.
+   *
+   * The server can respond in two ways:
+   * - **SSE streaming** (`text/event-stream`): we append text chunks as they arrive
+   * - **JSON** (non-streaming): we set the final narrative in one shot
+   *
+   * If anything goes wrong, we fall back to `buildTemplateNarrative(...)` so the
+   * report is still usable.
+   */
   async function generateWithLLM() {
     setError(null);
     setInfo(null);
@@ -155,6 +160,7 @@ export function ReportPage() {
     narrativeAbortRef.current?.abort();
     const ac = new AbortController();
     narrativeAbortRef.current = ac;
+    // Client-side timeout so a hanging request doesn't keep the UI stuck.
     const timeoutId = window.setTimeout(() => ac.abort(), LLM_TIMEOUT_MS);
     const input = buildLLMInput();
     try {
@@ -167,29 +173,26 @@ export function ReportPage() {
 
       const contentType = res.headers.get("Content-Type") ?? "";
       if (!res.ok) {
+        // Try to show a friendly error from the server if it returned JSON.
         const data =
           contentType.includes("application/json") &&
           (await res.json().catch(() => ({})));
-        setError(
-          (data as { error?: string })?.error ?? `Request failed (${res.status})`,
-        );
-        setNarrative(buildTemplateNarrative(topImpactRows));
-        setInfo("Using template narrative fallback. Click Generate again to retry.");
+        setError((data as { error?: string })?.error ?? `Request failed (${res.status})`);
         return;
       }
 
       if (!contentType.includes("text/event-stream")) {
+        // Non-streaming response shape: `{ narrative: string }`.
         const data = await res.json();
         const text = (data.narrative ?? "").trim();
-        setNarrative(text || buildTemplateNarrative(topImpactRows));
+        if (text) setNarrative(text);
         return;
       }
 
+      // Streaming SSE response: parse `data: ...` lines as they arrive.
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
       if (!reader) {
-        setNarrative(buildTemplateNarrative(topImpactRows));
-        setInfo("Using template narrative fallback.");
         return;
       }
 
@@ -200,6 +203,8 @@ export function ReportPage() {
         const { done, value } = await reader.read();
         if (done) break;
         buffer += decoder.decode(value, { stream: true });
+
+        // SSE frames are line-based. We keep any partial last line in `buffer`.
         const lines = buffer.split("\n");
         buffer = lines.pop() ?? "";
         for (const line of lines) {
@@ -210,11 +215,10 @@ export function ReportPage() {
               break;
             }
             try {
+              // Payload is either `{ text: string }` or `{ error: string }`.
               const parsed = JSON.parse(payload) as { text?: string; error?: string };
               if (parsed.error) {
                 setError(parsed.error);
-                setNarrative(buildTemplateNarrative(topImpactRows));
-                setInfo("Using template narrative fallback.");
                 return;
               }
               if (typeof parsed.text === "string") {
@@ -222,11 +226,13 @@ export function ReportPage() {
                 setNarrative(fullText);
               }
             } catch {
-              // ignore malformed JSON
+              // Ignore malformed JSON chunks; we'll keep listening for the next event.
             }
           }
         }
       }
+
+      // If the stream ended without a trailing newline, handle a final buffered event.
       if (buffer.startsWith("data: ")) {
         const payload = buffer.slice(6).trim();
         if (payload !== "[DONE]") {
@@ -234,8 +240,6 @@ export function ReportPage() {
             const parsed = JSON.parse(payload) as { text?: string; error?: string };
             if (parsed.error) {
               setError(parsed.error);
-              setNarrative(buildTemplateNarrative(topImpactRows));
-              setInfo("Using template narrative fallback.");
               return;
             }
             if (typeof parsed.text === "string") {
@@ -248,20 +252,15 @@ export function ReportPage() {
         }
       }
       if (!fullText.trim()) {
-        setNarrative(buildTemplateNarrative(topImpactRows));
-        setInfo("Using template narrative fallback.");
+        setError("Narrative generation returned empty content. Please try again.");
       }
     } catch (e) {
-      window.clearTimeout(timeoutId);
       if ((e as Error).name === "AbortError") {
+        // AbortError is expected when the timeout fires or we navigate away.
         setError("Request timed out. Click Generate again to retry.");
-        setNarrative(buildTemplateNarrative(topImpactRows));
-        setInfo("Using template narrative fallback.");
         return;
       }
       setError(e instanceof Error ? e.message : String(e));
-      setNarrative(buildTemplateNarrative(topImpactRows));
-      setInfo("Using template narrative fallback. Click Generate again to retry.");
     } finally {
       window.clearTimeout(timeoutId);
       setIsGenerating(false);
@@ -269,6 +268,7 @@ export function ReportPage() {
     }
   }
 
+  /** Export the current report (narrative + charts + tables) as a PDF. */
   async function handleExportPdf() {
     setError(null);
     setInfo(null);
@@ -314,6 +314,7 @@ export function ReportPage() {
 
       <NarrativeCard
         narrative={narrative}
+        hasNarrative={Boolean(narrative.trim())}
         isGenerating={isGenerating}
         isExporting={isExporting}
         onGenerate={generateWithLLM}

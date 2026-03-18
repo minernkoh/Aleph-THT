@@ -8,6 +8,7 @@ export function hasCycle(
   edges: ProcessEdge[],
   validNodeIds: Set<string>,
 ): boolean {
+  // Build an adjacency list (nodeId -> downstream nodeIds).
   const adj = new Map<string, string[]>();
   for (const id of validNodeIds) adj.set(id, []);
   for (const e of edges) {
@@ -15,6 +16,7 @@ export function hasCycle(
     adj.get(e.upstreamNodeId)!.push(e.downstreamNodeId);
   }
 
+  // `visited` avoids re-walking subgraphs; `inStack` detects back-edges (cycles).
   const visited = new Set<string>();
   const inStack = new Set<string>();
 

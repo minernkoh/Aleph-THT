@@ -22,7 +22,8 @@ const SAMPLE: Row[] = Array.from({ length: 137 }).map((_, i) => ({
   unit: "K",
 }));
 
-export function Task1TablePage() {
+/** Task 1: paginated table example with sample equipment data. */
+export function TablePage() {
   const columnDefs = useMemo<ColDef<Row>[]>(
     () => [
       { headerName: "ID", field: "id", width: 90 },

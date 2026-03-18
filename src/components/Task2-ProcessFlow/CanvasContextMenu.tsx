@@ -1,7 +1,7 @@
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Stack from "react-bootstrap/Stack";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type CanvasContextMenuTarget =
   | { kind: "node"; id: string }
@@ -19,6 +19,7 @@ export type CanvasContextMenuProps = {
   onAddNodeHere: () => void;
 };
 
+/** Right-click menu for nodes/edges/the canvas. */
 export function CanvasContextMenu({
   open,
   target,
@@ -30,9 +31,11 @@ export function CanvasContextMenu({
   onAddNodeHere,
 }: CanvasContextMenuProps) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState(() => ({ left: anchor.x, top: anchor.y }));
 
   useEffect(() => {
     if (!open) return;
+    // Let users close the menu quickly with Esc (common context menu behavior).
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
@@ -42,6 +45,7 @@ export function CanvasContextMenu({
 
   useEffect(() => {
     if (!open) return;
+    // Close the menu when clicking/tapping outside of it.
     function onPointerDown(e: PointerEvent) {
       const el = rootRef.current;
       if (!el) return;
@@ -52,6 +56,34 @@ export function CanvasContextMenu({
     return () => window.removeEventListener("pointerdown", onPointerDown);
   }, [open, onClose]);
 
+  useEffect(() => {
+    if (!open) return;
+    setPos({ left: anchor.x, top: anchor.y });
+  }, [open, anchor.x, anchor.y]);
+
+  useEffect(() => {
+    if (!open) return;
+    const el = rootRef.current;
+    if (!el) return;
+    const parent = (el.offsetParent ?? el.parentElement) as HTMLElement | null;
+    if (!parent) return;
+
+    const pRect = parent.getBoundingClientRect();
+    const rRect = el.getBoundingClientRect();
+
+    const margin = 8;
+    const maxLeft = Math.max(margin, pRect.width - rRect.width - margin);
+    const maxTop = Math.max(margin, pRect.height - rRect.height - margin);
+
+    const nextLeft = Math.min(Math.max(pos.left, margin), maxLeft);
+    const nextTop = Math.min(Math.max(pos.top, margin), maxTop);
+
+    if (nextLeft !== pos.left || nextTop !== pos.top) {
+      setPos({ left: nextLeft, top: nextTop });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, pos.left, pos.top, target.kind]);
+
   if (!open) return null;
 
   return (
@@ -61,16 +93,17 @@ export function CanvasContextMenu({
       aria-label="Canvas context menu"
       style={{
         position: "absolute",
-        left: anchor.x,
-        top: anchor.y,
+        left: pos.left,
+        top: pos.top,
         zIndex: 30,
-        width: 200,
+        width: "var(--size-menu-width)",
       }}
     >
       <Card
         style={{
-          border: "1px solid color-mix(in oklab, var(--color-node-border), black 15%)",
-          boxShadow: "0 18px 40px rgba(0,0,0,0.28)",
+          border:
+            "var(--border-width) solid color-mix(in oklab, var(--color-node-border), black 15%)",
+          boxShadow: "var(--shadow-lg)",
         }}
       >
         <Card.Body className="p-2">
@@ -79,7 +112,7 @@ export function CanvasContextMenu({
               <Button
                 size="sm"
                 variant="outline-primary"
-                className="text-start"
+                className="text-start touch-target-min"
                 onClick={() => {
                   onAddNodeHere();
                   onClose();
@@ -94,7 +127,7 @@ export function CanvasContextMenu({
                 <Button
                   size="sm"
                   variant="outline-primary"
-                  className="text-start"
+                  className="text-start touch-target-min"
                   onClick={() => {
                     onEditNode(target.id);
                     onClose();
@@ -105,7 +138,7 @@ export function CanvasContextMenu({
                 <Button
                   size="sm"
                   variant="outline-danger"
-                  className="text-start"
+                  className="text-start touch-target-min"
                   onClick={() => {
                     onDeleteNodes([target.id]);
                     onClose();
@@ -120,7 +153,7 @@ export function CanvasContextMenu({
               <Button
                 size="sm"
                 variant="outline-danger"
-                className="text-start"
+                className="text-start touch-target-min"
                 onClick={() => {
                   onDeleteEdges([target.id]);
                   onClose();

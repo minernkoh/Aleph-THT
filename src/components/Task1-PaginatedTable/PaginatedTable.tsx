@@ -22,6 +22,7 @@ export type PaginatedTableProps<T extends object> = {
   onRowClicked?: (event: RowClickedEvent<T>) => void;
 };
 
+/** Table wrapper that adds client-side paging controls. */
 export function PaginatedTable<T extends object>({
   title,
   columnDefs,
@@ -38,12 +39,14 @@ export function PaginatedTable<T extends object>({
   const [page, setPage] = useState<number>(1);
 
   const pageSizeOptions = useMemo(() => {
+    // Ensure the initial page size is always present in the dropdown.
     const base = pageSizeOptionsProp ?? [5, 10, 20, 50, 100];
     if (base.includes(initialPageSize)) return base;
     return [...base, initialPageSize].sort((a, b) => a - b);
   }, [pageSizeOptionsProp, initialPageSize]);
 
   useEffect(() => {
+    // When a new dataset arrives, jump back to page 1 so we don't land on an empty page.
     setPage(1);
   }, [data.length]);
 
@@ -51,6 +54,7 @@ export function PaginatedTable<T extends object>({
   const safePage = Math.min(Math.max(1, page), totalPages);
 
   const pagedData = useMemo(() => {
+    // Client-side pagination: slice the already-loaded array.
     const start = (safePage - 1) * pageSize;
     return data.slice(start, start + pageSize);
   }, [data, safePage, pageSize]);

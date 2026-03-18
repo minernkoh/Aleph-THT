@@ -1,6 +1,5 @@
 /**
  * Chart palette tuned for industrial/process analytics.
- * Designed to read clearly on both light and dark surfaces.
  */
 export const chartPalette = [
   "#2B6EF3", // steel blue (primary)
@@ -15,3 +14,8 @@ export const chartPalette = [
   "#06B6D4", // cyan-teal
 ] as const;
 
+export const NODE_TYPE_COLORS = {
+  type1: chartPalette[0],
+  type2: chartPalette[1],
+  type3: chartPalette[2],
+} as const;

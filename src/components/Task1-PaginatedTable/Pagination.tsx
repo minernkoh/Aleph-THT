@@ -22,10 +22,13 @@ export type PaginationProps = {
   onPageSizeChange: (nextPageSize: number) => void;
 };
 
+// Keep a number within [min, max]. Helps avoid out-of-range page numbers.
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
 }
 
+// Create a small list of pages around the current page, plus first/last.
+// The UI inserts an ellipsis ("…") whenever there's a gap.
 function buildPageList(page: number, totalPages: number) {
   const pages = new Set<number>();
   pages.add(1);
@@ -36,6 +39,7 @@ function buildPageList(page: number, totalPages: number) {
     .sort((a, b) => a - b);
 }
 
+/** Pagination controls and page-size selector for tables. */
 export function Pagination({
   page,
   totalPages,
@@ -77,6 +81,7 @@ export function Pagination({
         </Button>
         {pages.map((p, i) => (
           <Fragment key={p}>
+            {/* Insert a disabled ellipsis button when we skip page numbers. */}
             {i > 0 && p - pages[i - 1] > 1 && (
               <Button
                 className="touch-target-min"
@@ -117,7 +122,7 @@ export function Pagination({
         </Button>
       </ButtonGroup>
 
-      <div className="text-body-secondary tabular-nums" style={{ fontSize: 13 }}>
+      <div className="text-body-secondary tabular-nums" style={{ fontSize: "var(--text-sm)" }}>
         {totalItems === 0 ? "No results" : `Showing ${startItem}-${endItem} of ${totalItems}`}
       </div>
 

@@ -1,7 +1,14 @@
-import raw from "../../mock_results.json";
+/**
+ * Loads and validates the local mock dataset.
+ *
+ * We import `mock_results.json` as raw JSON, then validate it with Zod at startup.
+ * If the JSON shape doesn't match what the UI expects, we fail fast with a clear error.
+ */
+import raw from "./mock_results.json";
 import { z } from "zod";
 import type { MockResults } from "../types";
 
+// Small schemas composed into the full `mockResultsSchema`.
 const variableSchema = z.object({
   name: z.string(),
   type: z.string(),
@@ -43,6 +50,7 @@ const conditionImpactItemSchema = z.object({
   unit: z.string(),
 });
 
+// Full schema for the JSON file (a subset of `MockResults`, focused on the `data` payload).
 const mockResultsSchema = z.object({
   data: z.object({
     main_summary_text: z.string(),
@@ -58,6 +66,7 @@ const mockResultsSchema = z.object({
   }),
 });
 
+// Validate once at module load so every consumer can assume the data is well-formed.
 const parsed = mockResultsSchema.safeParse(raw);
 if (!parsed.success) {
   console.error("mock_results.json validation failed:", parsed.error.flatten());

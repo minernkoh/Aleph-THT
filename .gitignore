@@ -36,8 +36,6 @@ docs/
 # Logs (general)
 *.log
 
-skills-lock.json
-
 *.pid
 
 *.sqlite

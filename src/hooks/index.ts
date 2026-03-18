@@ -1,3 +1,4 @@
+/** Barrel exports for data hooks used across pages/components. */
 export { useTopImpact } from "./useTopImpact";
 export { useKpiSeries } from "./useKpiSeries";
 export { useScatterData } from "./useScatterData";

@@ -5,19 +5,25 @@ import { Layout } from "./components/Layout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { HomePage } from "./pages/HomePage";
 
-const Task1TablePage = lazy(() =>
-  import("./pages/Task1TablePage").then((m) => ({ default: m.Task1TablePage })),
+// Each task page is lazy-loaded so the initial bundle stays small.
+const TablePage = lazy(() =>
+  import("./pages/TablePage").then((m) => ({ default: m.TablePage }))
 );
 const ProcessFlowPage = lazy(() =>
-  import("./components/Task2-ProcessFlow/ProcessFlowPage").then((m) => ({ default: m.ProcessFlowPage })),
+  import("./pages/ProcessFlowPage").then((m) => ({ default: m.ProcessFlowPage }))
 );
 const ReportPage = lazy(() =>
-  import("./components/Task3-ReportGenerator/ReportPage").then((m) => ({ default: m.ReportPage })),
+  import("./pages/ReportPage").then((m) => ({
+    default: m.ReportPage,
+  }))
 );
 const DashboardPage = lazy(() =>
-  import("./components/Task4-Dashboard/DashboardPage").then((m) => ({ default: m.DashboardPage })),
+  import("./pages/DashboardPage").then((m) => ({
+    default: m.DashboardPage,
+  }))
 );
 
+/** Loading placeholder shown while a lazy-loaded route chunk downloads. */
 function RouteFallback() {
   return (
     <div className="p-4 text-body-secondary" aria-live="polite">
@@ -26,9 +32,11 @@ function RouteFallback() {
   );
 }
 
+/** App routes and lazy-loading entrypoint. */
 export default function App() {
   return (
     <BrowserRouter>
+      {/* Catch render-time crashes and show a friendly fallback UI. */}
       <ErrorBoundary>
         <Routes>
           <Route element={<Layout />}>
@@ -37,7 +45,7 @@ export default function App() {
               path="/task-1"
               element={
                 <Suspense fallback={<RouteFallback />}>
-                  <Task1TablePage />
+                  <TablePage />
                 </Suspense>
               }
             />
@@ -72,4 +80,3 @@ export default function App() {
     </BrowserRouter>
   );
 }
-

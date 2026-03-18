@@ -44,6 +44,39 @@
   /* Shadows (subtle, tokenized) */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
   --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 18px 40px rgba(0, 0, 0, 0.18);
+  --shadow-focus: 0 0 0 3px rgba(43, 110, 243, 0.35);
+
+  /* Borders */
+  --border-width: 1px;
+  --border-width-thick: 2px;
+
+  /* Component sizing */
+  --size-input-sm: 32px;
+  --size-input-md: 40px;
+  --size-input-lg: 48px;
+
+  /* Charts */
+  --chart-height-sm: 280px;
+  --chart-height-md: 320px;
+  --chart-height-lg: 340px;
+  --chart-height-xl: 380px;
+
+  /* Flow canvas component sizing */
+  --size-node-min-width: 180px;
+  --size-node-height: 54px;
+  --size-handle: 10px;
+  --size-menu-width: 200px;
+  --size-popup-width: 240px;
+  --size-canvas-height: 420px;
+  --size-alert-max-width: 360px;
+
+  /* Semantic spacing aliases */
+  --space-xs: var(--space-1);
+  --space-sm: var(--space-2);
+  --space-md: var(--space-4);
+  --space-lg: var(--space-6);
+  --space-xl: var(--space-8);
 
   /* Color system: neutrals + accents (light) */
   --bg: #f7f8fb;
@@ -165,16 +198,43 @@ pre {
   transition: box-shadow 180ms ease, transform 180ms ease, border-color 180ms ease;
 }
 
-.card.card-hover:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-  border-color: var(--border-strong);
+@media (hover: hover) and (pointer: fine) {
+  .card.card-hover:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+    border-color: var(--border-strong);
+  }
 }
 
 /* Make AG Grid feel flush inside Bootstrap card bodies (avoid double-framing). */
 .card-body .ag-root-wrapper {
   border: none;
   border-radius: 0;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Responsive adaptations                                                      */
+/* -------------------------------------------------------------------------- */
+
+@media (max-width: 767.98px) {
+  :root {
+    /* Reduce tall fixed surfaces on small screens. */
+    --chart-height-sm: 220px;
+    --chart-height-md: 260px;
+    --chart-height-lg: 280px;
+    --chart-height-xl: 320px;
+
+    /* Flow canvas: shorter viewport, larger touch handles. */
+    --size-canvas-height: 320px;
+    --size-handle: 18px;
+
+    /* Popups/menus: fit within narrow viewports. */
+    --size-menu-width: 180px;
+    --size-popup-width: 220px;
+
+    /* Alerts: avoid covering too much canvas. */
+    --size-alert-max-width: 300px;
+  }
 }
 
 @keyframes route-fade-in {

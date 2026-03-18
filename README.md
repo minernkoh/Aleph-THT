@@ -3,9 +3,9 @@
 This repo contains a React + TypeScript app implementing the 4 take-home tasks:
 
 - **Task 1**: Reusable AIO paginated table (`AG Grid` + pagination sub-component)
-- **Task 2**: Process flow editor (nodes + edges tables) + live canvas visualization (`React Flow`)
+- **Task 2**: Process flow editor (nodes + edges tables) + interactive canvas with add, connect, inline edit, and context menu (`React Flow`). Node creation is shared across table + canvas to keep default `Node N` names unique.
 - **Task 3**: Report generation with LLM narrative + PDF export (Google **Gemini** via Express API, `jspdf-autotable`, `jsPDF`). PDFs use searchable text and tables; charts are embedded as images.
-- **Task 4**: Analytics dashboard (pie/bar/line/scatter) using `mock_results.json` (`Recharts`)
+- **Task 4**: Analytics dashboard (pie/bar/line/scatter) using `src/data/mock_results.json` (`Recharts`)
 
 ## Tech Stack
 
@@ -23,22 +23,20 @@ This repo contains a React + TypeScript app implementing the 4 take-home tasks:
 ```
 src/
   components/       # UI components by feature
-    charts/         # Reusable Recharts wrappers
+    charts/         # Recharts components (shared `ChartShell` wrapper)
     Task1-PaginatedTable/  # Task 1
     Task2-ProcessFlow/     # Task 2
     Task3-ReportGenerator/ # Task 3
-    Task4-Dashboard/       # Task 4
   hooks/            # Custom data hooks
   services/         # PDF export
   pages/            # Route entry pages
   constants/        # Shared constants
   data/             # Mock data loader
   utils/            # Utilities
-  types.ts          # Shared types
+  types.ts          # Shared types (incl. chart/table view models)
 server/
   index.ts          # Express API (Gemini narrative proxy)
   narrativeSchema.ts # Zod schema for narrative request validation
-docs/               # Task write-ups + instructions + audits
 ```
 
 ## Running locally

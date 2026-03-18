@@ -4,19 +4,15 @@ import Col from "react-bootstrap/Col";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 
-import { mockResults } from "../../data/mockResults";
-import {
-  useKpiSeries,
-  useScatterData,
-  useSetpointBarData,
-  useTopImpact,
-} from "../../hooks";
-import { formatNumber } from "../../utils/formatNumber";
-import { ImpactPieChart } from "../charts/ImpactPieChart";
-import { KpiLineChart } from "../charts/KpiLineChart";
-import { ScatterVsKpiChart } from "../charts/ScatterVsKpiChart";
-import { SetpointBarChart } from "../charts/SetpointBarChart";
+import { mockResults } from "../data/mockResults";
+import { useKpiSeries, useScatterData, useSetpointBarData, useTopImpact } from "../hooks";
+import { formatNumber } from "../utils/formatNumber";
+import { ImpactPieChart } from "../components/charts/ImpactPieChart";
+import { KpiLineChart } from "../components/charts/KpiLineChart";
+import { ScatterVsKpiChart } from "../components/charts/ScatterVsKpiChart";
+import { SetpointBarChart } from "../components/charts/SetpointBarChart";
 
+/** Task 4: scenario KPI dashboard (overview + multiple charts). */
 export function DashboardPage() {
   const topImpactRows = useTopImpact();
   const barData = useSetpointBarData();
@@ -24,13 +20,10 @@ export function DashboardPage() {
   const scatterSeries = useScatterData();
 
   const summary = useMemo(() => {
-    const rows = mockResults.data.simulated_summary.simulated_data.map((s) => ({
-      scenario: s.scenario,
-      kpi: s.kpi_value,
-    }));
-    const first = rows[0];
+    // Compute best/worst/range from the already-derived KPI series (keeps a single source of truth).
+    const first = kpiSeries[0];
     const top = topImpactRows[0];
-    if (!first || rows.length === 0) {
+    if (!first || kpiSeries.length === 0) {
       return {
         best: { scenario: "", kpi: 0 },
         worst: { scenario: "", kpi: 0 },
@@ -38,8 +31,10 @@ export function DashboardPage() {
         topVariable: top ? `${top.name} (${formatNumber(top.weight)})` : "—",
       };
     }
-    const best = rows.reduce((a, b) => (b.kpi > a.kpi ? b : a), first);
-    const worst = rows.reduce((a, b) => (b.kpi < a.kpi ? b : a), first);
+    // Find the max/min KPI scenario using a single pass through the array.
+    const best = kpiSeries.reduce((a, b) => (b.kpi > a.kpi ? b : a), first);
+    const worst = kpiSeries.reduce((a, b) => (b.kpi < a.kpi ? b : a), first);
+    // Range helps communicate how sensitive the KPI is to scenario changes.
     const range = best.kpi - worst.kpi;
 
     return {
@@ -48,7 +43,7 @@ export function DashboardPage() {
       range,
       topVariable: top ? `${top.name} (${formatNumber(top.weight)})` : "—",
     };
-  }, [topImpactRows]);
+  }, [kpiSeries, topImpactRows]);
 
   return (
     <Container className="py-4">
@@ -95,7 +90,10 @@ export function DashboardPage() {
                 </div>
                 <div>
                   <div className="text-body-secondary small">Top impact driver</div>
-                  <div className="h6 mb-0 tabular-nums" style={{ lineHeight: 1.2 }}>
+                  <div
+                    className="h6 mb-0 tabular-nums"
+                    style={{ lineHeight: "var(--leading-tight)" }}
+                  >
                     {summary.topVariable}
                   </div>
                 </div>
@@ -109,7 +107,7 @@ export function DashboardPage() {
         <Col lg={6}>
           <Card className="card-hover">
             <Card.Header className="fw-semibold">Top impact (pie)</Card.Header>
-            <Card.Body style={{ height: 320 }}>
+            <Card.Body style={{ height: "var(--chart-height-md)" }}>
               <ImpactPieChart data={topImpactRows} />
             </Card.Body>
           </Card>
@@ -118,7 +116,7 @@ export function DashboardPage() {
         <Col lg={6}>
           <Card className="card-hover">
             <Card.Header className="fw-semibold">Setpoint weightage (bar)</Card.Header>
-            <Card.Body style={{ height: 320 }}>
+            <Card.Body style={{ height: "var(--chart-height-md)" }}>
               <SetpointBarChart data={barData} />
             </Card.Body>
           </Card>
@@ -127,7 +125,7 @@ export function DashboardPage() {
         <Col lg={12}>
           <Card className="card-hover">
             <Card.Header className="fw-semibold">KPI across scenarios (line)</Card.Header>
-            <Card.Body style={{ height: 340 }}>
+            <Card.Body style={{ height: "var(--chart-height-lg)" }}>
               <KpiLineChart data={kpiSeries} />
             </Card.Body>
           </Card>
@@ -138,7 +136,7 @@ export function DashboardPage() {
             <Card.Header className="fw-semibold">
               Variable values vs KPI (scatter)
             </Card.Header>
-            <Card.Body style={{ height: 380 }}>
+            <Card.Body style={{ height: "var(--chart-height-xl)" }}>
               <ScatterVsKpiChart
                 hexCold={scatterSeries.hexCold}
                 fuelTemp={scatterSeries.fuelTemp}

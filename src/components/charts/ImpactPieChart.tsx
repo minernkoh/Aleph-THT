@@ -1,49 +1,37 @@
 import { forwardRef } from "react";
 import { Cell, Legend, Pie, PieChart, Tooltip } from "recharts";
-import { ResponsiveContainer } from "recharts";
 import { chartPalette } from "../../constants/colors";
 import type { ImpactRow } from "../../types";
+import { ChartShell } from "./ChartShell";
 
+/**
+ * Pie chart: top-impact weights.
+ *
+ * The ref is used by the PDF exporter to capture the rendered chart.
+ */
 type Props = {
+  /** Rows of `{ name, weight }` already sorted/filtered for display. */
   data: ImpactRow[];
 };
 
 export const ImpactPieChart = forwardRef<HTMLDivElement | null, Props>(
   function ImpactPieChart({ data }, ref) {
     return (
-      <div
+      <ChartShell
         ref={ref}
-        role="img"
-        aria-label="Pie chart showing the top variable impact weights"
-        style={{ width: "100%", height: "100%" }}
+        ariaLabel="Pie chart showing the top variable impact weights"
+        hasData={data.length > 0}
       >
-        {data.length === 0 ? (
-          <div className="h-100 d-flex align-items-center justify-content-center text-body-secondary">
-            No data available
-          </div>
-        ) : (
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Tooltip />
-            <Legend />
-            <Pie
-              data={data}
-              dataKey="weight"
-              nameKey="name"
-              outerRadius={110}
-              label
-            >
-              {data.map((_, idx) => (
-                <Cell
-                  key={idx}
-                  fill={chartPalette[idx % chartPalette.length]}
-                />
-              ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
-        )}
-      </div>
+        <PieChart>
+          <Tooltip />
+          <Legend />
+          <Pie data={data} dataKey="weight" nameKey="name" outerRadius="80%" label>
+            {data.map((_, idx) => (
+              <Cell key={idx} fill={chartPalette[idx % chartPalette.length]} />
+            ))}
+          </Pie>
+        </PieChart>
+      </ChartShell>
     );
   },
 );
