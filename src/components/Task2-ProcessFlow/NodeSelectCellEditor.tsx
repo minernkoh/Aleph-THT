@@ -32,8 +32,8 @@ export const NodeSelectCellEditor = forwardRef<
   }));
 
   useEffect(() => {
-    // Keep the editor state in sync when the node list changes.
-    if (!value || !nodeIds.includes(value)) {
+    const ids = nodes.map((n) => n.id);
+    if (!value || !ids.includes(value)) {
       setSelectedId("");
     } else {
       setSelectedId(value);

@@ -9,7 +9,7 @@ import {
 } from "recharts";
 import { forwardRef } from "react";
 
-import { chartPalette } from "../../constants/colors";
+import { useChartPalette } from "../../hooks";
 import type { KpiSeriesRow } from "../../types";
 import { formatNumber } from "../../utils/formatNumber";
 import { ChartShell } from "./ChartShell";
@@ -28,11 +28,17 @@ type Props = {
 
 export const KpiLineChart = forwardRef<HTMLDivElement | null, Props>(
   function KpiLineChart({ data, angledLabels = false }, ref) {
+    const palette = useChartPalette();
     return (
       <ChartShell
         ref={ref}
         ariaLabel="Line chart showing KPI across scenarios"
         hasData={data.length > 0}
+        dataSummary={
+          data.length > 0
+            ? `${data.length} scenarios. KPI range: ${formatNumber(Math.min(...data.map((d) => d.kpi)))} to ${formatNumber(Math.max(...data.map((d) => d.kpi)))}.`
+            : undefined
+        }
       >
         <LineChart data={data} margin={angledLabels ? { bottom: 50 } : undefined}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -56,7 +62,7 @@ export const KpiLineChart = forwardRef<HTMLDivElement | null, Props>(
             dataKey="kpi"
             name="KPI"
             strokeWidth={2}
-            stroke={chartPalette[0]}
+            stroke={palette[0]}
           />
         </LineChart>
       </ChartShell>

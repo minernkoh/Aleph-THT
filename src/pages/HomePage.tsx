@@ -5,41 +5,44 @@ import { Link } from "react-router-dom";
 const tasks = [
   {
     to: "/task-1",
-    title: "1. Table",
+    number: "01",
+    title: "Table",
     description: "Browse and filter tabular data with configurable columns, sorting, and page size.",
   },
   {
     to: "/task-2",
-    title: "2. Process Flow",
+    number: "02",
+    title: "Process Flow",
     description: "Define nodes and edges in tables; see the flow update live on the canvas.",
   },
   {
     to: "/task-3",
-    title: "3. Report",
-    description: "Generate an LLM narrative from experiment results and export to PDF with tables and charts.",
+    number: "03",
+    title: "Report",
+    description: "Generate an LLM narrative from experiment results and export to PDF.",
   },
   {
     to: "/task-4",
-    title: "4. Dashboard",
-    description: "Explore scenario KPIs and variable impact with pie, bar, line, and scatter charts.",
+    number: "04",
+    title: "Dashboard",
+    description: "Explore scenario KPIs and variable impact across multiple chart types.",
   },
 ];
 
 /** Landing page with links to the four demo tasks. */
 export function HomePage() {
   return (
-    <Container className="py-4">
-      <section className="mb-4">
-        <h1 className="page-title--lg mb-2">Process First LLC</h1>
-        <p className="text-body-secondary mb-0" style={{ maxWidth: "42rem" }}>
+    <Container className="py-5">
+      <section style={{ marginBottom: "var(--space-12)" }}>
+        <h1 className="page-title--lg mb-3">Process First LLC</h1>
+        <p className="text-body-secondary mb-0" style={{ maxWidth: "38rem" }}>
           Tools for visualizing and troubleshooting process flow inefficiencies
-          in the chemical industry. Use the links below or the navbar to open
-          each module.
+          in the chemical industry.
         </p>
       </section>
 
       <div className="row g-3">
-        {tasks.map(({ to, title, description }) => (
+        {tasks.map(({ to, number, title, description }) => (
           <div key={to} className="col-md-6">
             <Card
               as={Link}
@@ -47,11 +50,40 @@ export function HomePage() {
               className="card-hover text-decoration-none text-body h-100"
               style={{ color: "inherit" }}
             >
-              <Card.Body>
-                <Card.Title className="h6 mb-2">{title}</Card.Title>
-                <Card.Text className="text-body-secondary small mb-0">
-                  {description}
-                </Card.Text>
+              <Card.Body className="d-flex gap-3 align-items-start">
+                <span
+                  className="tabular-nums"
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "var(--text-xs)",
+                    color: "var(--text-muted)",
+                    lineHeight: "var(--leading-tight)",
+                    paddingTop: "2px",
+                    flexShrink: 0,
+                  }}
+                >
+                  {number}
+                </span>
+                <div>
+                  <Card.Title
+                    as="h2"
+                    className="mb-1"
+                    style={{
+                      fontSize: "var(--text-md)",
+                      fontWeight: 600,
+                      fontFamily: "var(--font-display)",
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    {title}
+                  </Card.Title>
+                  <Card.Text
+                    className="text-body-secondary mb-0"
+                    style={{ fontSize: "var(--text-sm)" }}
+                  >
+                    {description}
+                  </Card.Text>
+                </div>
               </Card.Body>
             </Card>
           </div>

@@ -1,6 +1,7 @@
 import type {
   CellValueChangedEvent,
   ColDef,
+  GetRowIdParams,
   SelectionChangedEvent,
   ValueFormatterParams,
 } from "ag-grid-community";
@@ -17,6 +18,7 @@ import type { NodeType, ProcessNode } from "./types";
 
 const NODE_TYPES: NodeType[] = ["type1", "type2", "type3"];
 const TABLE_HEIGHT = 280;
+const getNodeRowId = (p: GetRowIdParams<ProcessNode>) => p.data.id;
 
 export type NodeTableProps = {
   nodes: ProcessNode[];
@@ -172,7 +174,7 @@ export function NodeTable({ nodes, onChange, createDefaultNode }: NodeTableProps
         <TableComponent<ProcessNode>
           columnDefs={columnDefs}
           rowData={nodes}
-          getRowId={(p) => p.data.id}
+          getRowId={getNodeRowId}
           gridOptions={gridOptions}
           onCellValueChanged={onCellValueChanged}
           onSelectionChanged={onSelectionChanged}

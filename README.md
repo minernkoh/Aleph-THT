@@ -31,6 +31,7 @@ src/
   services/         # PDF export
   pages/            # Route entry pages
   constants/        # Shared constants
+  context/          # Theme context (dark/light mode toggle)
   data/             # Mock data loader
   utils/            # Utilities
   types.ts          # Shared types (incl. chart/table view models)
@@ -48,7 +49,7 @@ npm install
 npm run dev
 ```
 
-Then open the dev server URL shown in the terminal.
+Then open the dev server URL shown in the terminal. The app supports **dark mode** via a navbar toggle; it also detects your system preference on first load.
 
 **Full stack** (Task 3 can call Gemini for narrative generation):
 

@@ -1,7 +1,7 @@
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import Stack from "react-bootstrap/Stack";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export type CanvasContextMenuTarget =
   | { kind: "node"; id: string }
@@ -19,6 +19,17 @@ export type CanvasContextMenuProps = {
   onAddNodeHere: () => void;
 };
 
+function getCssPxVar(name: string, fallbackPx: number) {
+  try {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    if (!v) return fallbackPx;
+    const n = Number.parseFloat(v.replace("px", ""));
+    return Number.isFinite(n) ? n : fallbackPx;
+  } catch {
+    return fallbackPx;
+  }
+}
+
 /** Right-click menu for nodes/edges/the canvas. */
 export function CanvasContextMenu({
   open,
@@ -31,7 +42,66 @@ export function CanvasContextMenu({
   onAddNodeHere,
 }: CanvasContextMenuProps) {
   const rootRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [pos, setPos] = useState(() => ({ left: anchor.x, top: anchor.y }));
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const items = useMemo(() => {
+    type Item = {
+      id: string;
+      label: string;
+      variant: "outline-primary" | "outline-danger";
+      onSelect: () => void;
+    };
+
+    const out: Item[] = [];
+    if (target.kind === "pane") {
+      out.push({
+        id: "add-node-here",
+        label: "Add node here",
+        variant: "outline-primary",
+        onSelect: () => {
+          onAddNodeHere();
+          onClose();
+        },
+      });
+    }
+
+    if (target.kind === "node") {
+      out.push({
+        id: "edit-node",
+        label: "Edit…",
+        variant: "outline-primary",
+        onSelect: () => {
+          onEditNode(target.id);
+          onClose();
+        },
+      });
+      out.push({
+        id: "delete-node",
+        label: "Delete node",
+        variant: "outline-danger",
+        onSelect: () => {
+          onDeleteNodes([target.id]);
+          onClose();
+        },
+      });
+    }
+
+    if (target.kind === "edge") {
+      out.push({
+        id: "delete-edge",
+        label: "Delete edge",
+        variant: "outline-danger",
+        onSelect: () => {
+          onDeleteEdges([target.id]);
+          onClose();
+        },
+      });
+    }
+
+    return out;
+  }, [onAddNodeHere, onClose, onDeleteEdges, onDeleteNodes, onEditNode, target]);
 
   useEffect(() => {
     if (!open) return;
@@ -63,6 +133,14 @@ export function CanvasContextMenu({
 
   useEffect(() => {
     if (!open) return;
+    setActiveIndex(0);
+    // Focus first item for keyboard users.
+    queueMicrotask(() => itemRefs.current[0]?.focus());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, target.kind, target.kind === "node" ? target.id : "", target.kind === "edge" ? target.id : ""]);
+
+  useEffect(() => {
+    if (!open) return;
     const el = rootRef.current;
     if (!el) return;
     const parent = (el.offsetParent ?? el.parentElement) as HTMLElement | null;
@@ -71,7 +149,7 @@ export function CanvasContextMenu({
     const pRect = parent.getBoundingClientRect();
     const rRect = el.getBoundingClientRect();
 
-    const margin = 8;
+    const margin = getCssPxVar("--space-2", 8);
     const maxLeft = Math.max(margin, pRect.width - rRect.width - margin);
     const maxTop = Math.max(margin, pRect.height - rRect.height - margin);
 
@@ -81,7 +159,6 @@ export function CanvasContextMenu({
     if (nextLeft !== pos.left || nextTop !== pos.top) {
       setPos({ left: nextLeft, top: nextTop });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, pos.left, pos.top, target.kind]);
 
   if (!open) return null;
@@ -91,6 +168,37 @@ export function CanvasContextMenu({
       ref={rootRef}
       role="menu"
       aria-label="Canvas context menu"
+      tabIndex={-1}
+      onKeyDown={(e) => {
+        if (items.length === 0) return;
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          const next = (activeIndex + 1) % items.length;
+          setActiveIndex(next);
+          itemRefs.current[next]?.focus();
+          return;
+        }
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          const next = (activeIndex - 1 + items.length) % items.length;
+          setActiveIndex(next);
+          itemRefs.current[next]?.focus();
+          return;
+        }
+        if (e.key === "Home") {
+          e.preventDefault();
+          setActiveIndex(0);
+          itemRefs.current[0]?.focus();
+          return;
+        }
+        if (e.key === "End") {
+          e.preventDefault();
+          const last = items.length - 1;
+          setActiveIndex(last);
+          itemRefs.current[last]?.focus();
+          return;
+        }
+      }}
       style={{
         position: "absolute",
         left: pos.left,
@@ -108,60 +216,23 @@ export function CanvasContextMenu({
       >
         <Card.Body className="p-2">
           <Stack gap={1}>
-            {target.kind === "pane" ? (
+            {items.map((it, idx) => (
               <Button
-                size="sm"
-                variant="outline-primary"
-                className="text-start touch-target-min"
-                onClick={() => {
-                  onAddNodeHere();
-                  onClose();
+                key={it.id}
+                ref={(el) => {
+                  itemRefs.current[idx] = el;
                 }}
-              >
-                Add node here
-              </Button>
-            ) : null}
-
-            {target.kind === "node" ? (
-              <>
-                <Button
-                  size="sm"
-                  variant="outline-primary"
-                  className="text-start touch-target-min"
-                  onClick={() => {
-                    onEditNode(target.id);
-                    onClose();
-                  }}
-                >
-                  Edit…
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline-danger"
-                  className="text-start touch-target-min"
-                  onClick={() => {
-                    onDeleteNodes([target.id]);
-                    onClose();
-                  }}
-                >
-                  Delete node
-                </Button>
-              </>
-            ) : null}
-
-            {target.kind === "edge" ? (
-              <Button
                 size="sm"
-                variant="outline-danger"
+                variant={it.variant}
                 className="text-start touch-target-min"
-                onClick={() => {
-                  onDeleteEdges([target.id]);
-                  onClose();
-                }}
+                role="menuitem"
+                tabIndex={idx === activeIndex ? 0 : -1}
+                onFocus={() => setActiveIndex(idx)}
+                onClick={it.onSelect}
               >
-                Delete edge
+                {it.label}
               </Button>
-            ) : null}
+            ))}
           </Stack>
         </Card.Body>
       </Card>

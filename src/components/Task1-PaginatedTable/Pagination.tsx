@@ -58,7 +58,7 @@ export function Pagination({
   return (
     <Stack
       direction="horizontal"
-      className="justify-content-between flex-wrap gap-3"
+      className="justify-content-between flex-wrap gap-3 pagination-bar"
     >
       <ButtonGroup aria-label="Pagination controls">
         <Button
@@ -96,6 +96,7 @@ export function Pagination({
               className="touch-target-min"
               variant={p === safePage ? "secondary" : "outline-secondary"}
               onClick={() => onPageChange(p)}
+              aria-label={`Page ${p}`}
               aria-current={p === safePage ? "page" : undefined}
             >
               {p}
@@ -135,7 +136,7 @@ export function Pagination({
           className="touch-target-min"
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
-          style={{ width: 110 }}
+          style={{ width: "var(--size-page-size-select, 110px)" }}
         >
           {pageSizeOptions.map((opt) => (
             <option key={opt} value={opt}>

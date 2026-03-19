@@ -13,6 +13,61 @@ import { PaginatedTable } from "../components/Task1-PaginatedTable";
 import { NarrativeCard } from "../components/Task3-ReportGenerator/NarrativeCard";
 import { ReportCharts } from "../components/Task3-ReportGenerator/ReportCharts";
 
+type LLMInput = ReturnType<typeof buildLLMInput>;
+
+/**
+ * Deterministic fallback narrative built entirely from the JSON data.
+ * Used when the LLM endpoint is unavailable (server down, key missing, error).
+ */
+function buildTemplateNarrative(input: LLMInput): string {
+  const { kpi_stats, top_impact, top_variables, setpoint_impact_summary } =
+    input;
+  const topEntries = Object.entries(top_impact)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5);
+
+  const topList = topEntries
+    .map(([name, weight]) => `- **${name}**: ${weight.toFixed(2)}%`)
+    .join("\n");
+
+  const topVarSummary = top_variables
+    .slice(0, 5)
+    .map(
+      (v) => `- ${v.equipment} — ${v.name} (${v.type}): ${v.value} ${v.unit}`
+    )
+    .join("\n");
+
+  const setpointSummary = setpoint_impact_summary
+    .slice(0, 5)
+    .map(
+      (s) =>
+        `- ${s.equipment} / ${s.setpoint}: ${s.weightage.toFixed(2)}% (${s.unit})`
+    )
+    .join("\n");
+
+  return [
+    `## ${input.main_summary_text}`,
+    "",
+    input.top_summary_text,
+    "",
+    `Across **${kpi_stats.n} scenarios**, the KPI ranged from **${kpi_stats.min.toFixed(3)}** to **${kpi_stats.max.toFixed(3)}** (mean **${kpi_stats.avg.toFixed(3)}**).`,
+    "",
+    "### Top Impact Variables",
+    "",
+    topList,
+    "",
+    "### Key Variable Details",
+    "",
+    topVarSummary,
+    "",
+    `### ${input.impact_summary_text}`,
+    "",
+    setpointSummary,
+    "",
+    "*This narrative was generated from a template because the LLM service was unavailable. Click **Generate** again when the server is running to get an AI-written analysis.*",
+  ].join("\n");
+}
+
 /**
  * Create a compact JSON payload to send to the backend LLM endpoint.
  *
@@ -150,8 +205,8 @@ export function ReportPage() {
    * - **SSE streaming** (`text/event-stream`): we append text chunks as they arrive
    * - **JSON** (non-streaming): we set the final narrative in one shot
    *
-   * If anything goes wrong, we fall back to `buildTemplateNarrative(...)` so the
-   * report is still usable.
+   * On failure (server down, bad key, timeout) the UI falls back to a deterministic
+   * template narrative so the report is still usable without the LLM.
    */
   async function generateWithLLM() {
     setError(null);
@@ -173,11 +228,13 @@ export function ReportPage() {
 
       const contentType = res.headers.get("Content-Type") ?? "";
       if (!res.ok) {
-        // Try to show a friendly error from the server if it returned JSON.
         const data =
           contentType.includes("application/json") &&
           (await res.json().catch(() => ({})));
-        setError((data as { error?: string })?.error ?? `Request failed (${res.status})`);
+        const msg =
+          (data as { error?: string })?.error ?? `Request failed (${res.status})`;
+        setError(msg);
+        if (!narrative.trim()) setNarrative(buildTemplateNarrative(input));
         return;
       }
 
@@ -256,11 +313,12 @@ export function ReportPage() {
       }
     } catch (e) {
       if ((e as Error).name === "AbortError") {
-        // AbortError is expected when the timeout fires or we navigate away.
         setError("Request timed out. Click Generate again to retry.");
+        if (!narrative.trim()) setNarrative(buildTemplateNarrative(input));
         return;
       }
       setError(e instanceof Error ? e.message : String(e));
+      if (!narrative.trim()) setNarrative(buildTemplateNarrative(input));
     } finally {
       window.clearTimeout(timeoutId);
       setIsGenerating(false);

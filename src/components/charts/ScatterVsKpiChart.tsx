@@ -9,7 +9,7 @@ import {
 } from "recharts";
 import { forwardRef } from "react";
 
-import { chartPalette } from "../../constants/colors";
+import { useChartPalette } from "../../hooks";
 import type { ScatterDataPoint } from "../../types";
 import { formatNumber } from "../../utils/formatNumber";
 import { ChartShell } from "./ChartShell";
@@ -30,6 +30,7 @@ type Props = {
 
 export const ScatterVsKpiChart = forwardRef<HTMLDivElement | null, Props>(
   function ScatterVsKpiChart({ hexCold, fuelTemp, airTemp }, ref) {
+    const palette = useChartPalette();
     const hasAnyData =
       hexCold.length > 0 || fuelTemp.length > 0 || airTemp.length > 0;
 
@@ -38,6 +39,11 @@ export const ScatterVsKpiChart = forwardRef<HTMLDivElement | null, Props>(
         ref={ref}
         ariaLabel="Scatter chart showing variable values versus KPI across scenarios"
         hasData={hasAnyData}
+        dataSummary={
+          hasAnyData
+            ? `Data points: HEX cold fluid ${hexCold.length}, Fuel temperature ${fuelTemp.length}, Air temperature ${airTemp.length}.`
+            : undefined
+        }
       >
         <ScatterChart>
           <CartesianGrid strokeDasharray="3 3" />
@@ -58,10 +64,10 @@ export const ScatterVsKpiChart = forwardRef<HTMLDivElement | null, Props>(
           <Scatter
             name="HEX-100 cold_fluid_temperature"
             data={hexCold}
-            fill={chartPalette[2]}
+            fill={palette[2]}
           />
-          <Scatter name="Fuel temperature" data={fuelTemp} fill={chartPalette[7]} />
-          <Scatter name="Air temperature" data={airTemp} fill={chartPalette[5]} />
+          <Scatter name="Fuel temperature" data={fuelTemp} fill={palette[7]} />
+          <Scatter name="Air temperature" data={airTemp} fill={palette[5]} />
         </ScatterChart>
       </ChartShell>
     );

@@ -34,11 +34,9 @@ export function NarrativeCard({
   onExport,
   onNarrativeChange,
 }: NarrativeCardProps) {
-  // Two modes: an editable textarea, or a Markdown preview (what will be exported).
   const [mode, setMode] = useState<"preview" | "edit">("preview");
 
   useEffect(() => {
-    // If the narrative is cleared, ensure we don't stay in edit mode.
     if (!hasNarrative) setMode("preview");
   }, [hasNarrative]);
 
@@ -61,6 +59,7 @@ export function NarrativeCard({
                     className="touch-target-min"
                     onClick={() => setMode("preview")}
                     disabled={isGenerating}
+                    aria-label="Preview narrative"
                   >
                     <span className="d-inline-flex align-items-center gap-1">
                       <EyeIcon size={16} aria-hidden="true" />
@@ -73,6 +72,7 @@ export function NarrativeCard({
                     className="touch-target-min"
                     onClick={() => setMode("edit")}
                     disabled={isGenerating}
+                    aria-label="Edit narrative"
                   >
                     <span className="d-inline-flex align-items-center gap-1">
                       <PencilSimpleIcon size={16} aria-hidden="true" />
@@ -87,6 +87,7 @@ export function NarrativeCard({
                   className="touch-target-min"
                   onClick={onGenerate}
                   disabled={isGenerating}
+                  aria-label={hasNarrative ? "Regenerate narrative" : "Generate narrative"}
                 >
                   {isGenerating ? (
                     <span className="d-inline-flex align-items-center gap-2">
@@ -105,6 +106,7 @@ export function NarrativeCard({
                   className="touch-target-min"
                   onClick={onExport}
                   disabled={isExporting}
+                  aria-label="Export report as PDF"
                 >
                   {isExporting ? (
                     <span className="d-inline-flex align-items-center gap-2">
@@ -138,15 +140,23 @@ export function NarrativeCard({
           ) : (
             <div className="text-body">
               {isGenerating && !narrative.trim() ? (
-                // While streaming starts, show a simple skeleton so the layout doesn't jump.
                 <div className="d-flex flex-column gap-2">
                   <div className="skeleton-line skeleton-line--lg" style={{ width: "72%" }} />
+                </div>
+              ) : !hasNarrative && !isGenerating ? (
+                <div className="text-center py-4 text-body-secondary">
+                  <div className="mb-2" style={{ fontSize: "var(--text-lg)" }}>
+                    No narrative yet
+                  </div>
+                  <div className="small">
+                    Click <strong>Generate narrative</strong> to create an AI analysis of
+                    the experiment results.
+                  </div>
                 </div>
               ) : (
                 <>
                   <ReactMarkdown>{narrative}</ReactMarkdown>
                   {isGenerating && narrative.trim() ? (
-                    // Subtle “typing cursor” while streaming chunks append to the narrative.
                     <span
                       className="streaming-cursor align-baseline"
                       aria-hidden

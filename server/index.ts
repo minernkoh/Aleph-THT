@@ -13,6 +13,8 @@ import { NarrativeRequestSchema } from "./narrativeSchema";
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
 
+// Permissive CORS: acceptable for local development. In production, restrict
+// to the frontend origin (e.g. cors({ origin: "https://app.example.com" })).
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 

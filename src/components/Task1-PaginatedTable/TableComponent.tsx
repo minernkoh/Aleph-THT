@@ -10,6 +10,13 @@ import type {
 import { themeQuartz } from "ag-grid-community";
 import { useMemo } from "react";
 
+const agTheme = themeQuartz.withParams({
+  backgroundColor: "var(--bg)",
+  foregroundColor: "var(--text)",
+  borderColor: "var(--border)",
+  chromeBackgroundColor: "var(--surface-1)",
+});
+
 export type TableComponentProps<T extends object> = {
   columnDefs: ColDef<T>[];
   rowData: T[];
@@ -32,11 +39,10 @@ export function TableComponent<T extends object>({
   onCellValueChanged,
   onRowClicked,
   onSelectionChanged,
-  height = 420,
+  height = "var(--size-table-height, 420px)",
 }: TableComponentProps<T>) {
   const defaultColDef = useMemo<ColDef<T>>(
     () => ({
-      // Defaults applied to every column unless overridden by a specific column def.
       sortable: true,
       filter: true,
       resizable: true,
@@ -48,19 +54,19 @@ export function TableComponent<T extends object>({
 
   const mergedGridOptions = useMemo<GridOptions<T>>(
     () => ({
-      // Consumers can override any grid option; we still guarantee a stable `getRowId`.
-      rowSelection: { mode: "singleRow" },
       ...gridOptions,
       getRowId: getRowId ?? gridOptions?.getRowId,
+      overlayNoRowsTemplate:
+        '<div class="text-body-secondary py-4">No rows to display</div>',
     }),
     [getRowId, gridOptions],
   );
 
   return (
     <div style={{ width: "100%", overflowX: "auto" }}>
-      <div style={{ minWidth: 480, height }}>
+      <div style={{ minWidth: "var(--size-table-min-width, 480px)", height }}>
         <AgGridReact<T>
-          theme={themeQuartz}
+          theme={agTheme}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
           rowData={rowData}
@@ -74,4 +80,3 @@ export function TableComponent<T extends object>({
     </div>
   );
 }
-

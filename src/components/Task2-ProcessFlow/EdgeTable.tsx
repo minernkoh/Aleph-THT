@@ -1,6 +1,7 @@
 import type {
   CellValueChangedEvent,
   ColDef,
+  GetRowIdParams,
   SelectionChangedEvent,
   ValueFormatterParams,
 } from "ag-grid-community";
@@ -19,6 +20,7 @@ import { NodeSelectCellEditor } from "./NodeSelectCellEditor";
 import type { ProcessEdge, ProcessNode } from "./types";
 
 const TABLE_HEIGHT = 280;
+const getEdgeRowId = (p: GetRowIdParams<ProcessEdge>) => p.data.id;
 
 export type EdgeTableProps = {
   nodes: ProcessNode[];
@@ -159,11 +161,19 @@ export function EdgeTable({ nodes, edges, onChange }: EdgeTableProps) {
       stopEditingWhenCellsLoseFocus: true,
       rowSelection: { mode: "multiRow" as const },
       getRowStyle: (params: { data?: ProcessEdge | null }) => {
-        const upstreamId = params.data?.upstreamNodeId;
-        if (!upstreamId) return undefined;
-        const t = nodeTypeById.get(upstreamId);
-        const color = t ? NODE_TYPE_COLORS[t] : undefined;
-        return color ? { borderLeft: `3px solid ${color}` } : undefined;
+        const upType = params.data?.upstreamNodeId
+          ? nodeTypeById.get(params.data.upstreamNodeId)
+          : undefined;
+        const downType = params.data?.downstreamNodeId
+          ? nodeTypeById.get(params.data.downstreamNodeId)
+          : undefined;
+        const leftColor = upType ? NODE_TYPE_COLORS[upType] : undefined;
+        const rightColor = downType ? NODE_TYPE_COLORS[downType] : undefined;
+        if (!leftColor && !rightColor) return undefined;
+        return {
+          ...(leftColor ? { borderLeft: `3px solid ${leftColor}` } : {}),
+          ...(rightColor ? { borderRight: `3px solid ${rightColor}` } : {}),
+        };
       },
     }),
     [nodeTypeById],
@@ -296,7 +306,7 @@ export function EdgeTable({ nodes, edges, onChange }: EdgeTableProps) {
         <TableComponent<ProcessEdge>
           columnDefs={columnDefs}
           rowData={edges}
-          getRowId={(p) => p.data.id}
+          getRowId={getEdgeRowId}
           gridOptions={gridOptionsWithEditor}
           onCellValueChanged={onCellValueChanged}
           onSelectionChanged={onSelectionChanged}

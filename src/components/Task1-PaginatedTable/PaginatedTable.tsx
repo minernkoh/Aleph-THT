@@ -4,7 +4,7 @@ import type {
   GridReadyEvent,
   RowClickedEvent,
 } from "ag-grid-community";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 
 import { Pagination } from "./Pagination";
 import { TableComponent } from "./TableComponent";
@@ -38,17 +38,20 @@ export function PaginatedTable<T extends object>({
   const [pageSize, setPageSize] = useState<number>(initialPageSize);
   const [page, setPage] = useState<number>(1);
 
+  // Reset to page 1 when the dataset size changes so the user doesn't land on
+  // an empty page. Adjusting state during render avoids an extra render cycle
+  // compared to useEffect (React docs: "you might not need an effect").
+  const [prevDataLength, setPrevDataLength] = useState(data.length);
+  if (data.length !== prevDataLength) {
+    setPrevDataLength(data.length);
+    setPage(1);
+  }
+
   const pageSizeOptions = useMemo(() => {
-    // Ensure the initial page size is always present in the dropdown.
     const base = pageSizeOptionsProp ?? [5, 10, 20, 50, 100];
     if (base.includes(initialPageSize)) return base;
     return [...base, initialPageSize].sort((a, b) => a - b);
   }, [pageSizeOptionsProp, initialPageSize]);
-
-  useEffect(() => {
-    // When a new dataset arrives, jump back to page 1 so we don't land on an empty page.
-    setPage(1);
-  }, [data.length]);
 
   const totalPages = Math.max(1, Math.ceil(data.length / pageSize));
   const safePage = Math.min(Math.max(1, page), totalPages);
@@ -64,7 +67,7 @@ export function PaginatedTable<T extends object>({
 
   return (
     <div className="d-flex flex-column gap-3">
-      {title ? <div className="fw-semibold">{title}</div> : null}
+      {title ? <h2 className="fw-semibold" style={{ fontSize: "var(--text-md)" }}>{title}</h2> : null}
       <TableComponent
         columnDefs={columnDefs}
         rowData={pagedData}

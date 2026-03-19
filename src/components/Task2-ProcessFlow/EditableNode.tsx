@@ -44,7 +44,7 @@ export function EditableNode({ id, data, selected }: NodeProps<EditableNodeData>
         gap: "var(--space-3)",
         textAlign: "center",
         boxShadow: selected ? "var(--shadow-focus)" : "none",
-        cursor: "default",
+        cursor: "grab",
         userSelect: "none",
       }}
       aria-label={`Node ${data.name}, type ${data.type}. Double click to edit.`}

@@ -9,7 +9,7 @@ import {
 } from "recharts";
 import { forwardRef } from "react";
 
-import { chartPalette } from "../../constants/colors";
+import { useChartPalette } from "../../hooks";
 import type { SetpointBarRow } from "../../types";
 import { formatNumber } from "../../utils/formatNumber";
 import { ChartShell } from "./ChartShell";
@@ -27,11 +27,17 @@ type Props = {
 
 export const SetpointBarChart = forwardRef<HTMLDivElement | null, Props>(
   function SetpointBarChart({ data }, ref) {
+    const palette = useChartPalette();
     return (
       <ChartShell
         ref={ref}
         ariaLabel="Bar chart showing setpoint weightage by equipment and setpoint"
         hasData={data.length > 0}
+        dataSummary={
+          data.length > 0
+            ? `${data.length} setpoints. Top: ${data.reduce((a, b) => (b.weightage > a.weightage ? b : a), data[0]).label} (${formatNumber(data.reduce((a, b) => (b.weightage > a.weightage ? b : a), data[0]).weightage)}).`
+            : undefined
+        }
       >
         <BarChart data={data} margin={{ left: 10, right: 10, bottom: 60 }}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -46,7 +52,7 @@ export const SetpointBarChart = forwardRef<HTMLDivElement | null, Props>(
           <YAxis tickFormatter={(v) => formatNumber(Number(v))} />
           <Tooltip formatter={(v) => [formatNumber(Number(v)), "Weightage"]} />
           <Legend />
-          <Bar dataKey="weightage" name="Weightage" fill={chartPalette[0]} />
+          <Bar dataKey="weightage" name="Weightage" fill={palette[0]} />
         </BarChart>
       </ChartShell>
     );

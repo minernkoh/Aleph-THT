@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { forwardRef } from "react";
+import { forwardRef, useId } from "react";
 import { ResponsiveContainer } from "recharts";
 
 type Props = {
@@ -7,6 +7,8 @@ type Props = {
   ariaLabel: string;
   /** When false, render a consistent empty-state instead of the chart. */
   hasData: boolean;
+  /** Short textual summary of key data points for screen-reader users. */
+  dataSummary?: string;
   children: ReactNode;
 };
 
@@ -16,16 +18,25 @@ type Props = {
  * Charts are rendered inside a `ResponsiveContainer` so they can be captured by the PDF exporter.
  */
 export const ChartShell = forwardRef<HTMLDivElement | null, Props>(function ChartShell(
-  { ariaLabel, hasData, children },
+  { ariaLabel, hasData, dataSummary, children },
   ref
 ) {
+  const descId = useId();
+  const hasDesc = Boolean(dataSummary);
+
   return (
     <div
       ref={ref}
       role="img"
       aria-label={ariaLabel}
+      aria-describedby={hasDesc ? descId : undefined}
       style={{ width: "100%", height: "100%" }}
     >
+      {hasDesc ? (
+        <div id={descId} className="visually-hidden">
+          {dataSummary}
+        </div>
+      ) : null}
       {!hasData ? (
         <div className="h-100 d-flex align-items-center justify-content-center text-body-secondary">
           No data available
@@ -38,4 +49,3 @@ export const ChartShell = forwardRef<HTMLDivElement | null, Props>(function Char
     </div>
   );
 });
-

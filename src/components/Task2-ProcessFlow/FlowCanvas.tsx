@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
+import Stack from "react-bootstrap/Stack";
 import ReactFlow, {
   Background,
   Controls,
@@ -132,6 +133,71 @@ export function FlowCanvas({
   const [menuAnchor, setMenuAnchor] = useState({ x: 0, y: 0 });
   const pendingAddNodeFlowPosRef = useRef<{ x: number; y: number } | null>(null);
 
+  const openMenuAtClientPoint = useCallback(
+    (args: {
+      clientX: number;
+      clientY: number;
+      target: CanvasContextMenuTarget;
+      pendingAddNodeFlowPos?: { x: number; y: number } | null;
+    }) => {
+      const container = wrapRef.current;
+      if (!container) return;
+      const cRect = container.getBoundingClientRect();
+      setMenuAnchor({ x: args.clientX - cRect.left, y: args.clientY - cRect.top });
+      setMenuTarget(args.target);
+      setMenuOpen(true);
+      setValidationError(null);
+      if (typeof args.pendingAddNodeFlowPos !== "undefined") {
+        pendingAddNodeFlowPosRef.current = args.pendingAddNodeFlowPos;
+      }
+    },
+    [],
+  );
+
+  // Touch affordance: long-press to open the context menu (replaces right-click on touch devices).
+  const longPressRef = useRef<{
+    timer: number | null;
+    startX: number;
+    startY: number;
+    target: CanvasContextMenuTarget;
+    pendingAddNodeFlowPos?: { x: number; y: number } | null;
+  } | null>(null);
+
+  const clearLongPress = useCallback(() => {
+    const lp = longPressRef.current;
+    if (!lp) return;
+    if (lp.timer) window.clearTimeout(lp.timer);
+    longPressRef.current = null;
+  }, []);
+
+  const startLongPress = useCallback(
+    (args: {
+      clientX: number;
+      clientY: number;
+      target: CanvasContextMenuTarget;
+      pendingAddNodeFlowPos?: { x: number; y: number } | null;
+    }) => {
+      if (!isTouchUi) return;
+      clearLongPress();
+      longPressRef.current = {
+        timer: window.setTimeout(() => {
+          openMenuAtClientPoint({
+            clientX: args.clientX,
+            clientY: args.clientY,
+            target: args.target,
+            pendingAddNodeFlowPos: args.pendingAddNodeFlowPos,
+          });
+          clearLongPress();
+        }, 520),
+        startX: args.clientX,
+        startY: args.clientY,
+        target: args.target,
+        pendingAddNodeFlowPos: args.pendingAddNodeFlowPos,
+      };
+    },
+    [clearLongPress, isTouchUi, openMenuAtClientPoint],
+  );
+
   const requestEdit = useCallback(
     (nodeId: string) => {
       const container = wrapRef.current;
@@ -159,6 +225,12 @@ export function FlowCanvas({
 
   const [rfNodes, setRfNodes] = useNodesState<EditableNodeData>([]);
   const [rfEdges, setRfEdges] = useEdgesState([]);
+
+  const selectedNodeIds = useMemo(
+    () => rfNodes.filter((n) => n.selected).map((n) => n.id),
+    [rfNodes],
+  );
+  const hasSelectedNode = selectedNodeIds.length > 0;
 
   const applyLayout = useCallback(
     (nextNodes: Node<EditableNodeData>[], nextEdges: Edge[]) => {
@@ -297,16 +369,53 @@ export function FlowCanvas({
         <div className="fw-semibold">Canvas</div>
         <div className="small text-body-secondary">
           {isTouchUi
-            ? "Tap Add node (or double-tap) • Drag handles to connect • Menu to delete"
+            ? "Tap Add node (or double-tap) • Drag handles to connect • Long-press for menu"
             : "Double-click to add • Drag handles to connect • Del/Backspace to delete"}
         </div>
       </Card.Header>
       <Card.Body style={{ height: "var(--size-canvas-height)", position: "relative" }}>
         <div
           ref={wrapRef}
-          role="img"
-          aria-label="Process flow graph showing nodes and directed edges"
+          role="application"
+          aria-roledescription="Interactive process flow editor"
+          aria-label="Process flow canvas"
           style={{ height: "100%" }}
+          onTouchStart={(e) => {
+            const t = e.touches[0];
+            if (!t) return;
+            const target = e.target instanceof Element ? e.target : null;
+            const nodeEl = target?.closest<HTMLElement>("[data-id]");
+            if (nodeEl) {
+              startLongPress({
+                clientX: t.clientX,
+                clientY: t.clientY,
+                target: { kind: "node", id: nodeEl.getAttribute("data-id")! },
+              });
+            } else {
+              const rf = rfInstanceRef.current;
+              if (!rf) return;
+              const pendingAddNodeFlowPos = rf.screenToFlowPosition({
+                x: t.clientX,
+                y: t.clientY,
+              });
+              startLongPress({
+                clientX: t.clientX,
+                clientY: t.clientY,
+                target: { kind: "pane" },
+                pendingAddNodeFlowPos,
+              });
+            }
+          }}
+          onTouchMove={(e) => {
+            const lp = longPressRef.current;
+            const t = e.touches[0];
+            if (!lp || !t) return;
+            if (Math.abs(t.clientX - lp.startX) + Math.abs(t.clientY - lp.startY) > 10) {
+              clearLongPress();
+            }
+          }}
+          onTouchEnd={() => clearLongPress()}
+          onTouchCancel={() => clearLongPress()}
         >
           {nodes.length === 0 ? (
             <div
@@ -354,39 +463,34 @@ export function FlowCanvas({
               }}
               onNodeContextMenu={(e, n) => {
                 e.preventDefault();
-                const container = wrapRef.current;
-                if (!container) return;
-                const cRect = container.getBoundingClientRect();
-                setMenuAnchor({ x: e.clientX - cRect.left, y: e.clientY - cRect.top });
-                setMenuTarget({ kind: "node", id: n.id });
-                setMenuOpen(true);
-                setValidationError(null);
+                openMenuAtClientPoint({
+                  clientX: e.clientX,
+                  clientY: e.clientY,
+                  target: { kind: "node", id: n.id },
+                });
               }}
               onEdgeContextMenu={(e, ed) => {
                 e.preventDefault();
-                const container = wrapRef.current;
-                if (!container) return;
-                const cRect = container.getBoundingClientRect();
-                setMenuAnchor({ x: e.clientX - cRect.left, y: e.clientY - cRect.top });
-                setMenuTarget({ kind: "edge", id: ed.id });
-                setMenuOpen(true);
-                setValidationError(null);
+                openMenuAtClientPoint({
+                  clientX: e.clientX,
+                  clientY: e.clientY,
+                  target: { kind: "edge", id: ed.id },
+                });
               }}
               onPaneContextMenu={(e) => {
                 e.preventDefault();
                 const rf = rfInstanceRef.current;
                 if (!rf) return;
-                const container = wrapRef.current;
-                if (!container) return;
-                const cRect = container.getBoundingClientRect();
-                pendingAddNodeFlowPosRef.current = rf.screenToFlowPosition({
+                const pendingAddNodeFlowPos = rf.screenToFlowPosition({
                   x: e.clientX,
                   y: e.clientY,
                 });
-                setMenuAnchor({ x: e.clientX - cRect.left, y: e.clientY - cRect.top });
-                setMenuTarget({ kind: "pane" });
-                setMenuOpen(true);
-                setValidationError(null);
+                openMenuAtClientPoint({
+                  clientX: e.clientX,
+                  clientY: e.clientY,
+                  target: { kind: "pane" },
+                  pendingAddNodeFlowPos,
+                });
               }}
               onNodeDoubleClick={(e, n) => {
                 e.preventDefault();
@@ -396,7 +500,7 @@ export function FlowCanvas({
               <Background />
               <Controls showInteractive={false} />
               <Panel position="top-left">
-                <div className="d-flex gap-2">
+                <Stack direction="horizontal" gap={2}>
                   <Button
                     size="sm"
                     variant="outline-primary"
@@ -415,7 +519,18 @@ export function FlowCanvas({
                   >
                     Auto layout
                   </Button>
-                </div>
+                  {isTouchUi && hasSelectedNode ? (
+                    <Button
+                      size="sm"
+                      variant="outline-danger"
+                      className="touch-target-min"
+                      onClick={() => onDeleteNodes(selectedNodeIds)}
+                      title="Delete selected node"
+                    >
+                      Delete
+                    </Button>
+                  ) : null}
+                </Stack>
               </Panel>
             </ReactFlow>
           )}
