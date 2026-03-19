@@ -23,6 +23,7 @@ export function TablePage() {
       {
         headerName: "Value",
         field: "value",
+        cellClass: "tabular-nums",
         valueFormatter: (p: ValueFormatterParams<SimulatedDataRow, number>) =>
           p.value != null ? formatNumber(p.value) : "",
       },
@@ -30,6 +31,7 @@ export function TablePage() {
       {
         headerName: "KPI",
         field: "kpi_value",
+        cellClass: "tabular-nums",
         valueFormatter: (p: ValueFormatterParams<SimulatedDataRow, number>) =>
           p.value != null ? formatNumber(p.value) : "",
       },

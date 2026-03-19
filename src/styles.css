@@ -105,6 +105,11 @@
   --size-table-min-width: 480px;
   --size-page-size-select: 110px;
 
+  /* Overlay / chrome backgrounds */
+  --color-navbar-bg: rgba(250, 250, 250, 0.82);
+  --color-modal-bg: #ffffff;
+  --color-attribution-bg: transparent;
+
   /* Back-compat + component-specific tokens */
   --color-bg-page: var(--bg);
   --color-text: var(--text);
@@ -332,9 +337,16 @@ pre {
   --color-node-bg: rgba(255, 255, 255, 0.05);
   --color-node-border: var(--border-strong);
 
+  --color-navbar-bg: rgba(9, 9, 11, 0.8);
+  --color-modal-bg: rgba(9, 9, 11, 0.95);
+  --color-attribution-bg: rgba(255, 255, 255, 0.08);
+
   --color-node-type1: #6ba1ff;
   --color-node-type2: #5eead4;
   --color-node-type3: #d4a44c;
+
+  --color-navbar-bg: rgba(9, 9, 11, 0.8);
+  --color-modal-bg: rgba(9, 9, 11, 0.95);
 }
 
 [data-bs-theme="dark"] body {
@@ -386,7 +398,7 @@ pre {
 }
 
 [data-bs-theme="dark"] .modal-content {
-  background-color: rgba(9, 9, 11, 0.95);
+  background-color: var(--color-modal-bg);
   color: var(--text);
   border-color: var(--border);
 }
@@ -396,7 +408,7 @@ pre {
 }
 
 [data-bs-theme="dark"] .react-flow__attribution {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--color-attribution-bg);
 }
 
 [data-bs-theme="dark"] .react-flow__attribution a {
@@ -408,7 +420,7 @@ pre {
 /* -------------------------------------------------------------------------- */
 
 .navbar {
-  background-color: rgba(250, 250, 250, 0.82) !important;
+  background-color: var(--color-navbar-bg) !important;
   backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
   border-bottom: 1px solid var(--border) !important;
@@ -427,7 +439,7 @@ pre {
 }
 
 [data-bs-theme="dark"] .navbar {
-  background-color: rgba(9, 9, 11, 0.8) !important;
+  background-color: var(--color-navbar-bg) !important;
   border-color: var(--border) !important;
 }
 
@@ -436,8 +448,8 @@ pre {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);

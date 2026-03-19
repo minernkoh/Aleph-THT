@@ -93,7 +93,7 @@ export function Pagination({
               </Button>
             )}
             <Button
-              className="touch-target-min"
+              className="touch-target-min tabular-nums"
               variant={p === safePage ? "secondary" : "outline-secondary"}
               onClick={() => onPageChange(p)}
               aria-label={`Page ${p}`}
@@ -133,7 +133,7 @@ export function Pagination({
         </Form.Label>
         <Form.Select
           id="page-size"
-          className="touch-target-min"
+          className="touch-target-min tabular-nums"
           value={pageSize}
           onChange={(e) => onPageSizeChange(Number(e.target.value))}
           style={{ width: "var(--size-page-size-select, 110px)" }}

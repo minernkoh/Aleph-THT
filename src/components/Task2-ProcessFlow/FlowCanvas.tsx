@@ -378,7 +378,7 @@ export function FlowCanvas({
           ref={wrapRef}
           role="application"
           aria-roledescription="Interactive process flow editor"
-          aria-label="Process flow canvas"
+          aria-label={`Process flow canvas: ${nodes.length} ${nodes.length === 1 ? "node" : "nodes"}, ${validEdges.length} ${validEdges.length === 1 ? "edge" : "edges"}`}
           style={{ height: "100%" }}
           onTouchStart={(e) => {
             const t = e.touches[0];
