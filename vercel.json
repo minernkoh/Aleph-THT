@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/generate-narrative", "destination": "/api/generate-narrative" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
