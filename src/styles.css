@@ -395,6 +395,14 @@ pre {
   background: var(--border-strong);
 }
 
+[data-bs-theme="dark"] .react-flow__attribution {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-bs-theme="dark"] .react-flow__attribution a {
+  color: var(--text-muted);
+}
+
 /* -------------------------------------------------------------------------- */
 /* Navbar: frosted glass with backdrop-blur                                     */
 /* -------------------------------------------------------------------------- */

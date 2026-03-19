@@ -387,7 +387,7 @@ export function ReportPage() {
         lineChartRef={lineChartRef}
       />
 
-      <Row className="g-3">
+      <Row className="g-5 mt-5">
         <Col lg={12}>
           <PaginatedTable
             title="Top variables"

@@ -1,5 +1,5 @@
 /**
- * Minimal Express backend used for optional LLM narrative generation.
+ * Minimal Express backend used for LLM narrative generation.
  *
  * The frontend can render a report without any server. When a Gemini API key is
  * configured, it can call this server endpoint to stream back an AI narrative.
@@ -36,8 +36,7 @@ app.post("/api/generate-narrative", async (req, res) => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey?.trim()) {
     res.status(500).json({
-      error:
-        "GEMINI_API_KEY is not configured. Set it in .env and restart the server.",
+      error: "GEMINI_API_KEY is not configured. Set it in .env and restart the server.",
     });
     return;
   }

@@ -9,9 +9,10 @@ import Spinner from "react-bootstrap/Spinner";
 import ReactMarkdown from "react-markdown";
 import {
   ArrowsClockwiseIcon,
-  EyeIcon,
   FilePdfIcon,
+  FloppyDiskIcon,
   PencilSimpleIcon,
+  XIcon,
 } from "@phosphor-icons/react";
 
 type NarrativeCardProps = {
@@ -24,7 +25,7 @@ type NarrativeCardProps = {
   onNarrativeChange: (nextNarrative: string) => void;
 };
 
-/** Narrative editor/preview card with generate/export actions. */
+/** Narrative card with read/edit modes and generate/export actions. */
 export function NarrativeCard({
   narrative,
   hasNarrative,
@@ -34,11 +35,27 @@ export function NarrativeCard({
   onExport,
   onNarrativeChange,
 }: NarrativeCardProps) {
-  const [mode, setMode] = useState<"preview" | "edit">("preview");
+  const [mode, setMode] = useState<"read" | "edit">("read");
+  const [draft, setDraft] = useState("");
 
   useEffect(() => {
-    if (!hasNarrative) setMode("preview");
-  }, [hasNarrative]);
+    if (isGenerating) setMode("read");
+  }, [isGenerating]);
+
+  function enterEdit() {
+    setDraft(narrative);
+    setMode("edit");
+  }
+
+  function handleSave() {
+    onNarrativeChange(draft);
+    setMode("read");
+  }
+
+  function handleCancel() {
+    setDraft("");
+    setMode("read");
+  }
 
   return (
     <Card className="mb-3 card-hover">
@@ -51,32 +68,44 @@ export function NarrativeCard({
               gap={2}
               className="justify-content-between flex-wrap"
             >
-              {hasNarrative ? (
+              {hasNarrative && mode === "read" ? (
+                <Button
+                  variant="outline-secondary"
+                  size="sm"
+                  className="touch-target-min"
+                  onClick={enterEdit}
+                  disabled={isGenerating}
+                  aria-label="Edit narrative"
+                >
+                  <span className="d-inline-flex align-items-center gap-1">
+                    <PencilSimpleIcon size={16} aria-hidden="true" />
+                    Edit
+                  </span>
+                </Button>
+              ) : mode === "edit" ? (
                 <Stack direction="horizontal" gap={2}>
                   <Button
-                    variant={mode === "preview" ? "secondary" : "outline-secondary"}
+                    variant="primary"
                     size="sm"
                     className="touch-target-min"
-                    onClick={() => setMode("preview")}
-                    disabled={isGenerating}
-                    aria-label="Preview narrative"
+                    onClick={handleSave}
+                    aria-label="Save narrative edits"
                   >
                     <span className="d-inline-flex align-items-center gap-1">
-                      <EyeIcon size={16} aria-hidden="true" />
-                      Preview
+                      <FloppyDiskIcon size={16} aria-hidden="true" />
+                      Save
                     </span>
                   </Button>
                   <Button
-                    variant={mode === "edit" ? "secondary" : "outline-secondary"}
+                    variant="outline-secondary"
                     size="sm"
                     className="touch-target-min"
-                    onClick={() => setMode("edit")}
-                    disabled={isGenerating}
-                    aria-label="Edit narrative"
+                    onClick={handleCancel}
+                    aria-label="Cancel editing"
                   >
                     <span className="d-inline-flex align-items-center gap-1">
-                      <PencilSimpleIcon size={16} aria-hidden="true" />
-                      Edit
+                      <XIcon size={16} aria-hidden="true" />
+                      Cancel
                     </span>
                   </Button>
                 </Stack>
@@ -125,7 +154,7 @@ export function NarrativeCard({
           </Col>
         </Row>
         <div className="mt-3" aria-busy={isGenerating}>
-          {mode === "edit" && !isGenerating ? (
+          {mode === "edit" ? (
             <Form.Group controlId="narrative-editor">
               <Form.Label className="text-body-secondary">
                 Edit narrative (Markdown supported)
@@ -133,8 +162,8 @@ export function NarrativeCard({
               <Form.Control
                 as="textarea"
                 rows={10}
-                value={narrative}
-                onChange={(e) => onNarrativeChange(e.currentTarget.value)}
+                value={draft}
+                onChange={(e) => setDraft(e.currentTarget.value)}
               />
             </Form.Group>
           ) : (

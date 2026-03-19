@@ -67,7 +67,7 @@ export function PaginatedTable<T extends object>({
 
   return (
     <div className="d-flex flex-column gap-3">
-      {title ? <h2 className="fw-semibold" style={{ fontSize: "var(--text-md)" }}>{title}</h2> : null}
+      {title ? <h2 className="fw-semibold" style={{ fontSize: "var(--text-lg)" }}>{title}</h2> : null}
       <TableComponent
         columnDefs={columnDefs}
         rowData={pagedData}

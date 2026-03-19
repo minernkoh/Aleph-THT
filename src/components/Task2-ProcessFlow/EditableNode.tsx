@@ -34,6 +34,7 @@ export function EditableNode({ id, data, selected }: NodeProps<EditableNodeData>
           ? "var(--border-width-thick) solid color-mix(in oklab, var(--bs-primary), white 20%)"
           : `var(--border-width) solid ${nodeBorderColor}`,
         background: "var(--color-node-bg)",
+        color: "var(--text)",
         padding: "var(--space-3) var(--space-3)",
         fontSize: "var(--text-xs)",
         minWidth: "var(--size-node-min-width)",
