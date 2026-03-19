@@ -1,11 +1,13 @@
 # Aleph Technologies – UI Developer Take-Home
 
-This repo contains a React + TypeScript app implementing the 4 take-home tasks:
+**[Live demo](https://aleph-tht.vercel.app)**
 
-- **Task 1**: Reusable AIO paginated table (`AG Grid` + pagination sub-component)
-- **Task 2**: Process flow editor (nodes + edges tables) + interactive canvas with add, connect, inline edit, and context menu (`React Flow`). Node creation is shared across table + canvas to keep default `Node N` names unique.
-- **Task 3**: Report generation with LLM narrative + PDF export (Google **Gemini** via Express API, `jspdf-autotable`, `jsPDF`). PDFs use searchable text and tables; charts are embedded as images.
-- **Task 4**: Analytics dashboard (pie/bar/line/scatter) using `src/data/mock_results.json` (`Recharts`)
+This repo contains a React + TypeScript app implementing 4 features:
+
+- **Feature 1**: Reusable AIO paginated table (`AG Grid` + pagination sub-component)
+- **Feature 2**: Process flow editor (nodes + edges tables) + interactive canvas with add, connect, inline edit, and context menu (`React Flow`). Node creation is shared across table + canvas to keep default `Node N` names unique.
+- **Feature 3**: Report generation with LLM narrative + PDF export (Google **Gemini** via Express API, `jspdf-autotable`, `jsPDF`). PDFs use searchable text and tables; charts are embedded as images.
+- **Feature 4**: Analytics dashboard (pie/bar/line/scatter) using `src/data/mock_results.json` (`Recharts`)
 
 ## Tech Stack
 
@@ -24,9 +26,9 @@ This repo contains a React + TypeScript app implementing the 4 take-home tasks:
 src/
   components/       # UI components by feature
     charts/         # Recharts components (shared `ChartShell` wrapper)
-    Task1-PaginatedTable/  # Task 1
-    Task2-ProcessFlow/     # Task 2
-    Task3-ReportGenerator/ # Task 3
+    Task1-PaginatedTable/  # Feature 1
+    Task2-ProcessFlow/     # Feature 2
+    Task3-ReportGenerator/ # Feature 3
   hooks/            # Custom data hooks
   services/         # PDF export
   pages/            # Route entry pages
@@ -42,7 +44,9 @@ server/
 
 ## Running locally
 
-**Frontend only** (Task 3 narrative generation requires the API key; without it a template fallback is used):
+A deployed version is available at [aleph-tht.vercel.app](https://aleph-tht.vercel.app). To run locally:
+
+**Frontend only** (Feature 3 narrative generation requires the API key; without it a template fallback is used):
 
 ```bash
 npm install
@@ -51,7 +55,7 @@ npm run dev
 
 Then open the dev server URL shown in the terminal. The app supports **dark mode** via a navbar toggle; it also detects your system preference on first load.
 
-**Full stack** (Task 3 can call Gemini for narrative generation):
+**Full stack** (Feature 3 can call Gemini for narrative generation):
 
 1. Copy `.env.example` to `.env`.
 2. Add your Gemini API key to `.env` (from [Google AI Studio](https://aistudio.google.com/apikey)). The key is used **server-side only** by the Express server; it is never sent to the browser.
@@ -77,7 +81,7 @@ A valid Gemini API key is required for narrative generation. If the key is missi
 | `npm run lint:fix` | Run ESLint with auto-fix |
 | `npm run format` | Format source with Prettier |
 
-## Notes (Task 3)
+## Notes (Feature 3)
 
 - A valid **Gemini API key is required** for narrative generation. If the server is not running or the key is not set, the report uses a deterministic template narrative so PDF export still works, but LLM-generated content will be unavailable.
 - The key is used **only on the Express server** (`server/index.ts`). The frontend calls `/api/generate-narrative`, which is proxied to the server; the key is never exposed to the browser. Do not commit `.env` or keys.
