@@ -270,6 +270,10 @@ pre {
   }
 }
 
+#main-content:focus {
+  outline: none;
+}
+
 @keyframes route-fade-in {
   from {
     opacity: 0;
