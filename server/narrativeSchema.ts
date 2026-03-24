@@ -7,57 +7,80 @@ import { z } from "zod";
  * that the backend forwards to Gemini. We validate the request up-front so the
  * server can return a helpful 400 error for malformed input.
  */
+const shortStr = z.string().max(200);
+
+const equipmentSpecSchema = z
+  .array(
+    z.object({
+      equipment: shortStr,
+      variables: z
+        .array(
+          z.object({
+            name: shortStr,
+            type: shortStr,
+            value: z.union([z.string().max(500), z.number()]),
+            unit: shortStr,
+          }),
+        )
+        .max(50),
+    }),
+  )
+  .max(20);
+
 export const NarrativeRequestSchema = z
   .object({
-    // Plain-text summaries shown on the report page.
-    main_summary_text: z.string(),
-    top_summary_text: z.string(),
-    // Map of variable name → weight/importance.
-    top_impact: z.record(z.string(), z.number()),
-    top_variables: z.array(
-      z.object({
-        equipment: z.string(),
-        type: z.string(),
-        name: z.string(),
-        value: z.union([z.string(), z.number()]),
-        unit: z.string(),
-      }),
-    ),
-    impact_summary_text: z.string(),
-    setpoint_impact_summary: z.array(
-      z.object({
-        equipment: z.string(),
-        setpoint: z.string(),
-        weightage: z.number(),
-        unit: z.string(),
-      }),
-    ),
+    main_summary_text: z.string().max(5000),
+    top_summary_text: z.string().max(5000),
+    top_impact: z.record(z.string().max(200), z.number()),
+    top_variables: z
+      .array(
+        z.object({
+          equipment: shortStr,
+          type: shortStr,
+          name: shortStr,
+          value: z.union([z.string().max(500), z.number()]),
+          unit: shortStr,
+        }),
+      )
+      .max(50),
+    impact_summary_text: z.string().max(5000),
+    setpoint_impact_summary: z
+      .array(
+        z.object({
+          equipment: shortStr,
+          setpoint: shortStr,
+          weightage: z.number(),
+          unit: shortStr,
+        }),
+      )
+      .max(50),
     condition_impact_summary: z
       .array(
         z.object({
-          equipment: z.string(),
-          condition: z.string(),
+          equipment: shortStr,
+          condition: shortStr,
           weightage: z.number(),
-          unit: z.string(),
+          unit: shortStr,
         }),
       )
+      .max(50)
       .default([]),
-    // Simple KPI statistics computed on the frontend for quick context.
     kpi_stats: z.object({
       min: z.number(),
       max: z.number(),
       avg: z.number(),
       n: z.number().int().positive(),
     }),
-    // A small sample of scenarios so the model sees representative structure.
-    scenarios_sample: z.array(
-      z.object({
-        scenario: z.string(),
-        kpi: z.string(),
-        kpi_value: z.number(),
-        equipment_specification: z.unknown(),
-      }),
-    ),
+    scenarios_sample: z
+      .array(
+        z.object({
+          scenario: shortStr,
+          kpi: shortStr,
+          kpi_value: z.number(),
+          equipment_specification: equipmentSpecSchema,
+        }),
+      )
+      .max(20),
   })
   .strict();
 
