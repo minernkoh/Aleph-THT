@@ -11,14 +11,14 @@ This repo contains a React + TypeScript app implementing 4 features:
 
 ## Tech Stack
 
-| Category   | Technologies |
-|-----------|---------------|
-| Frontend  | React 18, TypeScript, Vite 7, React Router 7, React Bootstrap, AG Grid, Recharts, React Flow, dagre, react-markdown |
-| Backend   | Express 4, Google Generative AI (Gemini) |
-| PDF       | jsPDF, jspdf-autotable, html2canvas |
-| Validation | Zod |
-| Icons     | @phosphor-icons/react |
-| Linting   | ESLint 9, Prettier |
+| Category   | Technologies                                                                                                        |
+| ---------- | ------------------------------------------------------------------------------------------------------------------- |
+| Frontend   | React 18, TypeScript, Vite 7, React Router 7, React Bootstrap, AG Grid, Recharts, React Flow, dagre, react-markdown |
+| Backend    | Express 4, Google Generative AI (Gemini)                                                                            |
+| PDF        | jsPDF, jspdf-autotable, html2canvas                                                                                 |
+| Validation | Zod                                                                                                                 |
+| Icons      | @phosphor-icons/react                                                                                               |
+| Linting    | ESLint 9, Prettier                                                                                                  |
 
 ## Project Structure
 
@@ -69,17 +69,17 @@ A valid Gemini API key is required for narrative generation. If the key is missi
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start Vite dev server |
-| `npm run server` | Start Express API server (Gemini proxy) |
-| `npm run dev:all` | Run API server and Vite dev server together |
-| `npm run typecheck` | Run TypeScript project build checks |
-| `npm run build` | TypeScript build + Vite production build |
-| `npm run preview` | Preview production build |
-| `npm run lint` | Run ESLint |
-| `npm run lint:fix` | Run ESLint with auto-fix |
-| `npm run format` | Format source with Prettier |
+| Command             | Description                                 |
+| ------------------- | ------------------------------------------- |
+| `npm run dev`       | Start Vite dev server                       |
+| `npm run server`    | Start Express API server (Gemini proxy)     |
+| `npm run dev:all`   | Run API server and Vite dev server together |
+| `npm run typecheck` | Run TypeScript project build checks         |
+| `npm run build`     | TypeScript build + Vite production build    |
+| `npm run preview`   | Preview production build                    |
+| `npm run lint`      | Run ESLint                                  |
+| `npm run lint:fix`  | Run ESLint with auto-fix                    |
+| `npm run format`    | Format source with Prettier                 |
 
 ## Notes (Feature 3)
 
